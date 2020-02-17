@@ -485,8 +485,7 @@ static int xdma_engine_stop(struct xdma_engine *engine)
 	write_register(w, &engine->regs->control,
 					 (unsigned long)(&engine->regs->control) -
 						 (unsigned long)(&engine->regs));
-	/* dummy read of status register to flush all previous writes */
-	dbg_tfr("%s(%s) done\n", __func__, engine->name);
+	wmb();
 	return 0;
 }
 
@@ -521,10 +520,7 @@ static int engine_start_mode_config(struct xdma_engine *engine)
 					 (unsigned long)(&engine->regs->control) -
 						 (unsigned long)(&engine->regs));
 
-	/* dummy read of status register to flush all previous writes */
-	w = read_register(&engine->regs->status);
-	dbg_tfr("ioread32(0x%p) = 0x%08x (dummy read flushes writes).\n",
-		&engine->regs->status, w);
+	wmb();
 	return 0;
 }
 
@@ -621,8 +617,6 @@ static struct xdma_transfer *engine_start(struct xdma_engine *engine)
 		(unsigned long)(&engine->sgdma_regs->first_desc_adjacent) -
 			(unsigned long)(&engine->sgdma_regs));
 
-	dbg_tfr("ioread32(0x%p) (dummy read flushes writes).\n",
-		&engine->regs->status);
 	mmiowb();
 
 	rv = engine_start_mode_config(engine);
@@ -1191,6 +1185,8 @@ static irqreturn_t xdma_channel_irq(int irq, void *dev_id)
 
 	engine = (struct xdma_engine *)dev_id;
 	xdev = engine->xdev;
+	read_interrupts(xdev);
+	engine_status_read(engine, 0, 1);
 
 	if (!xdev) {
 		WARN_ON(!xdev);
@@ -1207,8 +1203,7 @@ static irqreturn_t xdma_channel_irq(int irq, void *dev_id)
 		&engine->regs->interrupt_enable_mask_w1c,
 		(unsigned long)(&engine->regs->interrupt_enable_mask_w1c) -
 			(unsigned long)(&engine->regs));
-	/* Dummy read to flush the above write */
-	read_register(&irq_regs->channel_int_pending);
+	wmb();
 	/* Schedule the bottom half */
 	schedule_work(&engine->work);
 
@@ -2363,6 +2358,7 @@ static int engine_alloc_resource(struct xdma_engine *engine)
 						XDMA_TRANSFER_MAX_DESC *
 							sizeof(struct xdma_desc),
 						&engine->desc_bus, GFP_KERNEL);
+	engine->desc_idx = 0;
 	if (!engine->desc) {
 		pr_warn("dev %s, %s pre-alloc desc OOM.\n",
 			dev_name(&xdev->pdev->dev), engine->name);
@@ -2439,7 +2435,7 @@ static void transfer_destroy(struct xdma_dev *xdev, struct xdma_transfer *xfer)
 		/* free descriptors */
 	xdma_desc_done(xfer->desc_virt, xfer->desc_num);
 
-	if (xfer->last_in_request && (xfer->flags & XFER_FLAG_NEED_UNMAP)) {
+	if (xfer->last_in_request) {
 		struct sg_table *sgt = xfer->sgt;
 
 		if (sgt->nents) {
@@ -2457,10 +2453,11 @@ static int transfer_build(struct xdma_engine *engine,
 	int i = 0;
 	int j = 0;
 
+	dbg_desc("desc_max: %d\n", desc_max);
 	for (; i < desc_max; i++, j++, sdesc++) {
 		dbg_desc("sw desc %d/%u: 0x%llx, 0x%x, ep 0x%llx.\n",
-			 i + req->sw_desc_idx, req->sw_desc_cnt, sdesc->addr,
-			 sdesc->len, req->ep_addr);
+			 i + req->sw_desc_idx + 1, req->sw_desc_cnt,
+			 sdesc->addr, sdesc->len, req->ep_addr);
 
 		/* fill in descriptor entry j with transfer details */
 		xdma_desc_set(xfer->desc_virt + j, sdesc->addr, req->ep_addr,
@@ -2500,20 +2497,17 @@ static int transfer_init(struct xdma_engine *engine, struct xdma_request_cb *req
 	xfer->desc_bus = engine->desc_bus + (sizeof(struct xdma_desc) * engine->desc_idx);
 	xfer->desc_index = engine->desc_idx;
 
-
-	/* TODO: Need to handle desc_used >= XDMA_TRANSFER_MAX_DESC for aio calls */
-
 	if ((engine->desc_idx + desc_max) >= XDMA_TRANSFER_MAX_DESC )
 		desc_max = XDMA_TRANSFER_MAX_DESC - engine->desc_idx;
 
 	transfer_desc_init(xfer, desc_max);
 
 	dbg_sg("xfer= %p transfer->desc_bus = 0x%llx.\n",xfer, (u64)xfer->desc_bus);
-	transfer_build(engine, req, xfer , desc_max);
+	transfer_build(engine, req, xfer, desc_max);
 
 	/* Contiguous descriptors cannot cross PAGE boundry. Adjust max accordingly */
 	desc_align = engine->desc_idx + desc_max - 1;
-	desc_align = desc_align % 128;
+	desc_align = desc_align % (PAGE_SIZE / sizeof(struct xdma_desc));
 	if (desc_align < (desc_max - 1)) {
 		desc_align = desc_max - desc_align - 1;
 	}
@@ -2532,7 +2526,7 @@ static int transfer_init(struct xdma_engine *engine, struct xdma_request_cb *req
 
 	xfer->desc_num = desc_max;
 	engine->desc_idx = (engine->desc_idx + desc_max) % XDMA_TRANSFER_MAX_DESC;
-	engine->desc_used += desc_max ;
+	engine->desc_used += desc_max;
 
 	/* fill in adjacent numbers */
 	for (i = 0; i < xfer->desc_num; i++)
@@ -2565,7 +2559,7 @@ static void xdma_request_cb_dump(struct xdma_request_cb *req)
 		req, req->total_len, req->ep_addr, req->sw_desc_cnt, req->sgt);
 	sgt_dump(req->sgt);
 	for (i = 0; i < req->sw_desc_cnt; i++)
-		pr_info("%d/%u, 0x%llx, %u.\n", i, req->sw_desc_cnt,
+		pr_info("%d/%u, 0x%llx, %u.\n", i+1, req->sw_desc_cnt,
 			req->sdesc[i].addr, req->sdesc[i].len);
 }
 #endif
@@ -2658,7 +2652,7 @@ static struct xdma_request_cb *xdma_init_request(struct sg_table *sgt,
 }
 
 ssize_t xdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
-			 struct sg_table *sgt, bool dma_mapped, int timeout_ms)
+			 struct sg_table *sgt, int timeout_ms)
 {
 	struct xdma_dev *xdev = (struct xdma_dev *)dev_hndl;
 	struct xdma_engine *engine;
@@ -2715,20 +2709,14 @@ ssize_t xdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 		return -EINVAL;
 	}
 
-	if (!dma_mapped) {
-		nents = dma_map_sg(&xdev->pdev->dev, sg, sgt->orig_nents, dir);
-		if (!nents) {
-			pr_info("map sgl failed, sgt 0x%p.\n", sgt);
-			return -EIO;
-		}
-		sgt->nents = nents;
-	} else {
-		if (!sgt->nents) {
-			pr_err("sg table has invalid number of entries 0x%p.\n",
-						 sgt);
-			return -EIO;
-		}
+	/* This may communicate with the IOMMU */
+	nents = dma_map_sg(&xdev->pdev->dev, sg, sgt->orig_nents, dir);
+	if (!nents) {
+		pr_info("map sgl failed, sgt 0x%p.\n", sgt);
+		return -EIO;
 	}
+	dbg_tfr("nents: %d\n", nents);
+	sgt->nents = nents;
 
 	req = xdma_init_request(sgt, ep_addr);
 	if (!req) {
@@ -2756,9 +2744,6 @@ ssize_t xdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 			goto unmap_sgl;
 		}
 		xfer = &req->tfer[0];
-
-		if (!dma_mapped)
-			xfer->flags = XFER_FLAG_NEED_UNMAP;
 
 		/* last transfer for the given request? */
 		nents -= xfer->desc_num;
@@ -2862,7 +2847,7 @@ ssize_t xdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 	//spin_unlock(&engine->desc_lock);
 
 unmap_sgl:
-	if (!dma_mapped && sgt->nents) {
+	if (sgt->nents) {
 		dma_unmap_sg(&xdev->pdev->dev, sgt->sgl, sgt->orig_nents, dir);
 		sgt->nents = 0;
 	}
