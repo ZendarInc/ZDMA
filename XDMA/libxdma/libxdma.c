@@ -524,6 +524,18 @@ static int engine_start_mode_config(struct xdma_engine *engine)
 	return 0;
 }
 
+/* Checks whether an adjacent value violates the page boundary */
+static int crosses_page(u64 addr, u16 adj)
+{
+	u64 start_page, end_page, end_addr;
+
+	end_addr = addr + (adj + 1) * sizeof(struct xdma_desc) - 1;
+	start_page = addr >> PAGE_SHIFT;
+	end_page = end_addr >> PAGE_SHIFT;
+
+	return end_page > start_page;
+}
+
 /**
  * engine_start() - start an idle engine with its first transfer on queue
  *
@@ -606,10 +618,19 @@ static struct xdma_transfer *engine_start(struct xdma_engine *engine)
 						 (unsigned long)(&engine->sgdma_regs));
 
 	if (transfer->desc_adjacent > 0) {
-		extra_adj = transfer->desc_adjacent - 1;
-		if (extra_adj > MAX_EXTRA_ADJ)
+		u64 next_page_addr;
+		next_page_addr =
+			(((u64)transfer->desc_bus >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
+		extra_adj = (next_page_addr - transfer->desc_bus) /
+			sizeof (struct xdma_desc) - 1;
+		if (extra_adj > transfer->desc_adjacent - 1)
+			extra_adj = transfer->desc_adjacent - 1;
+		else if (extra_adj > MAX_EXTRA_ADJ)
 			extra_adj = MAX_EXTRA_ADJ;
 	}
+
+	BUG_ON(crosses_page(transfer->desc_bus, extra_adj));
+
 	dbg_tfr("iowrite32(0x%08x to 0x%p) (first_desc_adjacent)\n", extra_adj,
 		(void *)&engine->sgdma_regs->first_desc_adjacent);
 	write_register(
@@ -2439,7 +2460,7 @@ static void transfer_destroy(struct xdma_dev *xdev, struct xdma_transfer *xfer)
 		struct sg_table *sgt = xfer->sgt;
 
 		if (sgt->nents) {
-			dma_unmap_sg(&xdev->pdev->dev, sgt->sgl, sgt->nents,
+			dma_unmap_sg(&xdev->pdev->dev, sgt->sgl, sgt->orig_nents,
 				xfer->dir);
 			sgt->nents = 0;
 		}
@@ -2508,9 +2529,8 @@ static int transfer_init(struct xdma_engine *engine, struct xdma_request_cb *req
 	/* Contiguous descriptors cannot cross PAGE boundry. Adjust max accordingly */
 	desc_align = engine->desc_idx + desc_max - 1;
 	desc_align = desc_align % (PAGE_SIZE / sizeof(struct xdma_desc));
-	if (desc_align < (desc_max - 1)) {
+	if (desc_align < desc_max)
 		desc_align = desc_max - desc_align - 1;
-	}
 	else
 		desc_align = desc_max;
 
@@ -2715,7 +2735,6 @@ ssize_t xdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 		pr_info("map sgl failed, sgt 0x%p.\n", sgt);
 		return -EIO;
 	}
-	dbg_tfr("nents: %d\n", nents);
 	sgt->nents = nents;
 
 	req = xdma_init_request(sgt, ep_addr);
