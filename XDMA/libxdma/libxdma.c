@@ -54,12 +54,6 @@ static unsigned int interrupt_mode;
 module_param(interrupt_mode, uint, 0644);
 MODULE_PARM_DESC(interrupt_mode, "0 - MSI-x , 1 - MSI, 2 - Legacy");
 
-static unsigned int enable_credit_mp = 1;
-module_param(enable_credit_mp, uint, 0644);
-MODULE_PARM_DESC(
-	enable_credit_mp,
-	"Set 0 to disable credit feature, default is 1 ( credit control enabled)");
-
 unsigned int desc_blen_max = XDMA_DESC_BLEN_MAX;
 module_param(desc_blen_max, uint, 0644);
 MODULE_PARM_DESC(desc_blen_max,
@@ -590,14 +584,6 @@ static struct xdma_transfer *engine_start(struct xdma_engine *engine)
 	engine->shutdown = ENGINE_SHUTDOWN_NONE;
 
 	dbg_tfr("%s(%s): transfer=0x%p.\n", __func__, engine->name, transfer);
-
-	/* Add credits for Streaming mode C2H */
-	if (engine->streaming && engine->dir == DMA_FROM_DEVICE) {
-			if(enable_credit_mp){
-					//write_register(RX_BUF_PAGES,&engine->sgdma_regs->credits);
-					write_register(engine->desc_used, &engine->sgdma_regs->credits, 0);
-			}
-	}
 
 	/* initialize number of descriptors of dequeued transfers */
 	engine->desc_dequeued = 0;
@@ -2297,16 +2283,6 @@ static int engine_destroy(struct xdma_dev *xdev, struct xdma_engine *engine)
 					 (unsigned long)(&engine->regs->interrupt_enable_mask) -
 						 (unsigned long)(&engine->regs));
 
-	if (enable_credit_mp && engine->streaming &&
-			engine->dir == DMA_FROM_DEVICE) {
-		u32 reg_value = (0x1 << engine->channel) << 16;
-		struct sgdma_common_regs *reg =
-			(struct sgdma_common_regs
-				 *)(xdev->bar[xdev->config_bar_idx] +
-						(0x6 * TARGET_SPACING));
-		write_register(reg_value, &reg->credit_mode_enable_w1c, 0);
-	}
-
 	/* Release memory use for descriptor writebacks */
 	engine_free_resource(engine);
 
@@ -2325,7 +2301,6 @@ static int engine_destroy(struct xdma_dev *xdev, struct xdma_engine *engine)
  * @offset byte address offset in BAR[xdev->config_bar_idx] resource for the
  * SG DMA * controller registers.
  * @dir: DMA_TO/FROM_DEVICE
- * @streaming Whether the engine is attached to AXI ST (rather than MM)
  */
 static int engine_init_regs(struct xdma_engine *engine)
 {
@@ -2354,19 +2329,6 @@ static int engine_init_regs(struct xdma_engine *engine)
 						 (unsigned long)(&engine->regs));
 
 	engine->interrupt_enable_mask_value = reg_value;
-
-	/* only enable credit mode for AXI-ST C2H */
-	if (enable_credit_mp && engine->streaming &&
-			engine->dir == DMA_FROM_DEVICE) {
-		struct xdma_dev *xdev = engine->xdev;
-		u32 reg_value = (0x1 << engine->channel) << 16;
-		struct sgdma_common_regs *reg =
-			(struct sgdma_common_regs
-				 *)(xdev->bar[xdev->config_bar_idx] +
-						(0x6 * TARGET_SPACING));
-
-		write_register(reg_value, &reg->credit_mode_enable_w1s, 0);
-	}
 
 	return 0;
 }
@@ -2418,14 +2380,15 @@ static int engine_init(struct xdma_engine *engine, struct xdma_dev *xdev,
 	engine->sgdma_regs = xdev->bar[xdev->config_bar_idx] + offset +
 					 SGDMA_OFFSET_FROM_CHANNEL;
 	val = read_register(&engine->regs->identifier);
-	if (val & 0x8000U)
-		engine->streaming = 1;
+	if (val & 0x8000U) {
+		pr_err("Streaming not supported by this driver");
+		BUG();
+	}
 
 	/* remember SG DMA direction */
 	engine->dir = dir;
-	sprintf(engine->name, "%d-%s%d-%s", xdev->idx,
-		(dir == DMA_TO_DEVICE) ? "H2C" : "C2H", channel,
-		engine->streaming ? "ST" : "MM");
+	sprintf(engine->name, "%d-%s%d", xdev->idx,
+		(dir == DMA_TO_DEVICE) ? "H2C" : "C2H", channel);
 
 	dbg_init("engine %p name %s irq_bitmask=0x%08x\n", engine, engine->name,
 		 (int)engine->irq_bitmask);

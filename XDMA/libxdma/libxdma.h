@@ -1,7 +1,7 @@
 /*
  * This file is part of the Xilinx DMA IP Core driver for Linux
  *
- * Copyright (c) 2016-present,  Xilinx, Inc.
+ * Copyright (c) 2016-present,	Xilinx, Inc.
  * All rights reserved.
  *
  * This source code is free software; you can redistribute it and/or modify it
@@ -10,7 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE.	See the GNU General Public License for
  * more details.
  *
  * The full GNU General Public License is included in this distribution in
@@ -32,13 +32,10 @@
 #include <linux/pci.h>
 #include <linux/workqueue.h>
 /*
- *  if the config bar is fixed, the driver does not neeed to search through
- *  all of the bars
+ *	if the config bar is fixed, the driver does not need to search through
+ *	all of the bars
  */
 //#define XDMA_CONFIG_BAR_NUM	1
-
-/* Switch debug printing on/off */
-#define XDMA_DEBUG 0
 
 /* SECTION: Preprocessor macros/constants */
 #define XDMA_BAR_NUM (6)
@@ -53,7 +50,6 @@
  */
 #define XDMA_ENG_IRQ_NUM (1)
 #define MAX_EXTRA_ADJ (63)
-#define RX_STATUS_EOP (1)
 
 /* Target internal components on XDMA control BAR */
 #define XDMA_OFS_INT_CTRL	(0x2000UL)
@@ -160,9 +156,6 @@
 #define PAGE_SHIFT_X86 12
 #define PAGE_MASK_X86 0xfff
 
-/* for C2H AXI-ST mode */
-#define CYCLIC_RX_PAGES_MAX	256
-
 #define LS_BYTE_MASK 0x000000FFUL
 
 #define BLOCK_ID_MASK 0xFFF00000
@@ -173,7 +166,6 @@
 
 #define WB_COUNT_MASK 0x00ffffffUL
 #define WB_ERR_MASK (1UL << 31)
-#define POLL_TIMEOUT_SECONDS 10
 
 #define MAX_USER_IRQ 16
 
@@ -181,9 +173,6 @@
 
 #define DESC_MAGIC 0xAD4B0000UL
 
-#define C2H_WB 0x52B4UL
-
-#define MAX_NUM_ENGINES (XDMA_CHANNEL_NUM_MAX * 2)
 #define H2C_CHANNEL_OFFSET 0x1000
 #define SGDMA_OFFSET_FROM_CHANNEL 0x4000
 #define CHANNEL_SPACING 0x100
@@ -428,7 +417,6 @@ struct xdma_transfer {
 
 	enum transfer_state state;	/* state of the transfer */
 	unsigned int flags;
-#define XFER_FLAG_NEED_UNMAP	0x1
 	int last_in_request;		/* flag if last within request */
 	unsigned int len;
 	struct sg_table *sgt;
@@ -453,8 +441,6 @@ struct xdma_engine {
 	struct xdma_dev *xdev;	/* parent device */
 	char name[5];		/* name of this engine */
 	int version;		/* version of this engine */
-	//dev_t cdevno;		/* character device major:minor */
-	//struct cdev cdev;	/* character device (embedded struct) */
 
 	/* HW register address offsets */
 	struct engine_regs *regs;		/* Control reg BAR offset */
@@ -467,7 +453,6 @@ struct xdma_engine {
 	int device_open;	/* flag if engine node open, ST mode only */
 	int running;		/* flag if the driver started engine */
 	int non_incr_addr;	/* flag if non-incremental addressing used */
-	int streaming;
 	int addr_align;		/* source/dest alignment in bytes */
 	int len_granularity;	/* transfer length multiple */
 	int addr_bits;		/* HW datapath address width */
@@ -481,9 +466,7 @@ struct xdma_engine {
 	/* Transfer list management */
 	struct list_head transfer_list;	/* queue of transfers */
 
-  u8 *perf_buf_virt;
-  dma_addr_t perf_buf_bus; /* bus address */
-  /* Members associated with interrupt mode support */
+	/* Members associated with interrupt mode support */
 	wait_queue_head_t shutdown_wq;	/* wait queue for shutdown sync */
 	spinlock_t lock;		/* protects concurrent access */
 	int prev_cpu;			/* remember CPU# of (last) locker */
