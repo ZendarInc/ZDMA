@@ -8,7 +8,7 @@
  * LICENSE file in the root directory of this source tree)
  */
 
-#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 #define _XOPEN_SOURCE 500
 #include <assert.h>
 #include <fcntl.h>
