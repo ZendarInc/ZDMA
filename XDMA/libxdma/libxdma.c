@@ -2018,7 +2018,7 @@ static void xdma_desc_adjacent(struct xdma_desc *desc, int next_adjacent)
 {
 	int extra_adj = 0;
 	/* remember reserved and control bits */
-	u32 control = le32_to_cpu(desc->control) & 0x0000f0ffUL;
+	u32 control = le32_to_cpu(desc->control) & 0x0000c0ffUL;
 	u32 max_adj_4k = 0;
 
 	if (next_adjacent > 0) {
@@ -2036,7 +2036,7 @@ static void xdma_desc_adjacent(struct xdma_desc *desc, int next_adjacent)
 		}
 	}
 	/* merge adjacent and control field */
-	control |= 0xAD4B0000UL | (extra_adj << 8);
+	control |= DESC_MAGIC | (extra_adj << 8);
 	/* write control and next_adjacent */
 	desc->control = cpu_to_le32(control);
 }
