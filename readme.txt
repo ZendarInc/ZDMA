@@ -33,26 +33,6 @@ Directory and file description:
 		This script is intended for use with the PCIe DMA example
 		design.
 
-	 - perform_hwcount.sh:
-		This script runs hardware performance for XDMA for both Host to
-		Card (H2C) and Card to Host (C2H). The result are copied to
-		'hw_log_h2c.txt' and hw_log_c2h.txt' text files. 
-		For each direction the performance script loops from 64 bytes
-		to 4MBytes and generate performance numbers (byte size doubles
-		for each loop count).
-		You can grep for 'data rate' on those two files to see data
-		rate values.
-		Data rate values are in percentage of maximum throughput.
-		Maximum data rate for x8 Gen3 is 8Gbytes/s, so for a x8Gen3
-		design value of 0.81 data rate is 0.81*8 = 6.48Gbytes/s.
-		Maximum data rate for x16 Gen3 is 16Gbytes/s, so for a x16Gen3
-		design value of 0.78 data rate is 0.78*16 = 12.48Gbytes/s.
-		This program can be run on AXI-MM example design.
-		AXI-ST example design is a loopback design, both H2C and C2H
-		are connected. Running on AXI-ST example design will not
-		generate proper numbers.
-		If a AXI-ST design is independent of H2C and C2H, performance
-		number can be generated. 
 	- data/:
 		This directory contains binary data files that are used for DMA
 		data transfers to the Xilinx FPGA PCIe endpoint device.
