@@ -530,8 +530,8 @@ static int crosses_page(u64 addr, u16 adj)
 	u64 start_page, end_page, end_addr;
 
 	end_addr = addr + (adj + 1) * sizeof(struct xdma_desc) - 1;
-	start_page = addr >> PAGE_SHIFT;
-	end_page = end_addr >> PAGE_SHIFT;
+	start_page = addr >> PAGE_SHIFT_X86;
+	end_page = end_addr >> PAGE_SHIFT_X86;
 
 	return end_page > start_page;
 }
@@ -620,7 +620,8 @@ static struct xdma_transfer *engine_start(struct xdma_engine *engine)
 	if (transfer->desc_adjacent > 0) {
 		u64 next_page_addr;
 		next_page_addr =
-			((transfer->desc_bus >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
+			((transfer->desc_bus >> PAGE_SHIFT_X86) + 1) <<
+				PAGE_SHIFT_X86;
 		extra_adj = (next_page_addr - transfer->desc_bus) /
 			sizeof (struct xdma_desc) - 1;
 		if (extra_adj > transfer->desc_adjacent - 1)
@@ -2019,17 +2020,16 @@ static void xdma_desc_adjacent(struct xdma_desc *desc, int next_adjacent)
 	int extra_adj = 0;
 	/* remember reserved and control bits */
 	u32 control = le32_to_cpu(desc->control) & 0x0000c0ffUL;
-	u32 max_adj_4k = 0;
+	u32 max_adj_page = 0;
 
 	if (next_adjacent > 0) {
 		extra_adj = next_adjacent - 1;
 		if (extra_adj > MAX_EXTRA_ADJ)
 			extra_adj = MAX_EXTRA_ADJ;
-		max_adj_4k =
-			(0x1000 - ((le32_to_cpu(desc->next_lo)) & 0xFFF)) / 32 -
-			1;
-		if (extra_adj > max_adj_4k)
-			extra_adj = max_adj_4k;
+		max_adj_page = (PAGE_SIZE_X86 - (le32_to_cpu(desc->next_lo) &
+			PAGE_MASK_X86)) / sizeof(struct xdma_desc) - 1;
+		if (extra_adj > max_adj_page)
+			extra_adj = max_adj_page;
 		if (extra_adj < 0) {
 			pr_warn("extra_adj<0, converting it to 0\n");
 			extra_adj = 0;
@@ -2528,7 +2528,7 @@ static int transfer_init(struct xdma_engine *engine, struct xdma_request_cb *req
 
 	/* Contiguous descriptors cannot cross PAGE boundry. Adjust max accordingly */
 	desc_align = engine->desc_idx + desc_max - 1;
-	desc_align = desc_align % (PAGE_SIZE / sizeof(struct xdma_desc));
+	desc_align = desc_align % (PAGE_SIZE_X86 / sizeof(struct xdma_desc));
 	if (desc_align < desc_max)
 		desc_align = desc_max - desc_align - 1;
 	else

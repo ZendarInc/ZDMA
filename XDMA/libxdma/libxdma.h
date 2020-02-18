@@ -155,6 +155,11 @@
 #define XDMA_ID_H2C 0x1fc0U
 #define XDMA_ID_C2H 0x1fc1U
 
+/* x86 assumptions needed for Tegra arch */
+#define PAGE_SIZE_X86 0x1000
+#define PAGE_SHIFT_X86 12
+#define PAGE_MASK_X86 0xfff
+
 /* for C2H AXI-ST mode */
 #define CYCLIC_RX_PAGES_MAX	256
 
