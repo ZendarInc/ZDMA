@@ -620,7 +620,7 @@ static struct xdma_transfer *engine_start(struct xdma_engine *engine)
 	if (transfer->desc_adjacent > 0) {
 		u64 next_page_addr;
 		next_page_addr =
-			(((u64)transfer->desc_bus >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
+			((transfer->desc_bus >> PAGE_SHIFT) + 1) << PAGE_SHIFT;
 		extra_adj = (next_page_addr - transfer->desc_bus) /
 			sizeof (struct xdma_desc) - 1;
 		if (extra_adj > transfer->desc_adjacent - 1)
