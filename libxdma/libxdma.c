@@ -1194,7 +1194,6 @@ static irqreturn_t xdma_channel_irq(int irq, void *dev_id)
 	engine = (struct xdma_engine *)dev_id;
 	xdev = engine->xdev;
 	read_interrupts(xdev);
-	engine_status_read(engine, 0, 1);
 
 	if (!xdev) {
 		WARN_ON(!xdev);
