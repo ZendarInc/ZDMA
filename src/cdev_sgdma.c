@@ -142,24 +142,6 @@ static int check_transfer_align(struct xdma_engine *engine,
 	return 0;
 }
 
-/*
- * Map a user memory range into a scatterlist
- * inspired by vhost_scsi_map_to_sgl()
- * Returns the number of scatterlist entries used or -errno on error.
- */
-static inline void xdma_io_cb_release(struct xdma_io_cb *cb)
-{
-	int i;
-
-	for (i = 0; i < cb->pages_nr; i++)
-		put_page(cb->pages[i]);
-
-	sg_free_table(&cb->sgt);
-	kfree(cb->pages);
-
-	memset(cb, 0, sizeof(*cb));
-}
-
 static void char_sgdma_unmap_user_buf(struct xdma_io_cb *cb, bool write)
 {
 	int i;
