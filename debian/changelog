@@ -1,4 +1,4 @@
-zdma-dkms (0.0.0) stretch; urgency=medium
+zdma-dkms (0.0.0) bionic; urgency=medium
 
   * Initial package.
 
