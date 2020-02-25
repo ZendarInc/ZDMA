@@ -311,11 +311,6 @@ static int create_xcdev(struct xdma_pci_dev *xpdev, struct xdma_cdev *xcdev,
 		minor = type;
 		cdev_ctrl_init(xcdev);
 		break;
-	case CHAR_XVC:
-		/* minor number is type index for non-SGDMA interfaces */
-		minor = type;
-		cdev_xvc_init(xcdev);
-		break;
 	case CHAR_XDMA_H2C:
 		minor = 32 + engine->channel;
 		cdev_sgdma_init(xcdev);

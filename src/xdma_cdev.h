@@ -37,7 +37,6 @@ int char_open(struct inode *inode, struct file *file);
 int char_close(struct inode *inode, struct file *file);
 int xcdev_check(const char *fname, struct xdma_cdev *xcdev, bool check_engine);
 void cdev_ctrl_init(struct xdma_cdev *xcdev);
-void cdev_xvc_init(struct xdma_cdev *xcdev);
 void cdev_event_init(struct xdma_cdev *xcdev);
 void cdev_sgdma_init(struct xdma_cdev *xcdev);
 long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
