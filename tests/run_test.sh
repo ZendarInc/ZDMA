@@ -22,7 +22,7 @@ isStreaming=0
 h2cChannels=0
 for ((i=0; i<=3; i++))
 do
-  statusRegVal=`$tool_path/reg_rw /dev/xdma0_control 0x0${i}00 w | grep "Read.*:" | sed 's/Read.*: 0x\([a-z0-9]*\)/\1/'`
+  statusRegVal=`$tool_path/reg_rw /dev/zdma0_control 0x0${i}00 w | grep "Read.*:" | sed 's/Read.*: 0x\([a-z0-9]*\)/\1/'`
   channelId=${statusRegVal:0:3}
   streamEnable=${statusRegVal:4:1}
   if [ $channelId == "1fc" ]; then
@@ -37,7 +37,7 @@ echo "Info: Number of enabled h2c channels = $h2cChannels"
 c2hChannels=0
 for ((i=0; i<=3; i++))
 do
-  $tool_path/reg_rw /dev/xdma0_control 0x1${i}00 w | grep "Read.*: 0x1fc" > /dev/null
+  $tool_path/reg_rw /dev/zdma0_control 0x1${i}00 w | grep "Read.*: 0x1fc" > /dev/null
   returnVal=$?
   if [ $returnVal -eq 0 ]; then
     c2hChannels=$((c2hChannels + 1))

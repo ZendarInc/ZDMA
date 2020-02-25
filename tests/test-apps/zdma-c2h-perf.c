@@ -28,27 +28,27 @@
 #include <unistd.h>
 #include <time.h>
 #include <math.h>
-#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <math.h>
 
-//#define MAX_TRANSFER_SIZE (100 * 1024 * 1024)
-#define MAX_TRANSFER_SIZE (8 * 1024 * 1024)
+#define MAX_TRANSFER_SIZE (100 * 1024 * 1024)
+//#define MAX_TRANSFER_SIZE (8 * 1024 * 1024)
 
 int main(int argc, char **argv)
 {
 	int fd, ret;
 	uint64_t transfer_size;
-	void *src;
-	struct timespec tvs, tve;
+	void *dst;
+	struct timespec tvs, tve, tres;
 	uint64_t tdelta_us;
 
 	if (argc != 1) {
-		fprintf(stderr, "usage: xdma-h2c-perf\n");
+		fprintf(stderr, "usage: zdma-malloc\n");
 		return 1;
 	}
 
-	fd = open("/dev/xdma0_h2c_0", O_RDWR);
+	fd = open("/dev/zdma0_c2h_1", O_RDONLY);
 	if (fd < 0) {
 		perror("open() failed");
 		return 1;
@@ -72,9 +72,9 @@ int main(int argc, char **argv)
 		transfer_size = len_array[i];
 		printf("Test transfer size = %lu\n", transfer_size);
 
-		src = calloc(transfer_size, 1);
-		if (!src) {
-			fprintf(stderr, "malloc(src) failed\n");
+		dst = calloc(transfer_size, 1);
+		if (!dst) {
+			fprintf(stderr, "malloc(dst) failed\n");
 			return 1;
 		}
 
@@ -85,11 +85,11 @@ int main(int argc, char **argv)
 				return 1;
 			}
 			clock_gettime(CLOCK_REALTIME, &tvs);
-			ret = write(fd, src, transfer_size);
+			ret = read(fd, dst, transfer_size);
 			clock_gettime(CLOCK_REALTIME, &tve);
 			if (ret < 0) {
-				fprintf(stderr, "write(DMA) failed: %d\n", ret);
-				perror("write() failed");
+				fprintf(stderr, "read(DMA) failed: %d\n", ret);
+				perror("read() failed");
 				return 1;
 			}
 
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 			time_array[i] = time_array[i] + tdelta_us;
 		}
 
-		free(src);
+		free(dst);
 	}
 
 	for (int i = 0; i < CHUNK_SAMPLES; i++) {

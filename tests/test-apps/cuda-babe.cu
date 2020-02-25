@@ -92,13 +92,13 @@ int main(int argc, char **argv)
   }
 
   //c2h_fd = open("/dev/picoevb", O_RDWR);
-  c2h_fd = open("/dev/xdma0_c2h_0", O_RDONLY);
+  c2h_fd = open("/dev/zdma0_c2h_0", O_RDONLY);
   if (c2h_fd < 0) {
     perror("open() failed");
     return 1;
   }
 
-  h2c_fd = open("/dev/xdma0_h2c_0", O_WRONLY);
+  h2c_fd = open("/dev/zdma0_h2c_0", O_WRONLY);
   if (h2c_fd < 0) {
     perror("open() failed");
     return 1;

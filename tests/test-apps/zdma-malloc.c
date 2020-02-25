@@ -44,12 +44,12 @@ int main(int argc, char **argv)
 	int fdr, fdw, ret;
 
 	if (argc != 1) {
-		fprintf(stderr, "usage: xdma-malloc\n");
+		fprintf(stderr, "usage: zdma-malloc\n");
 		return 1;
 	}
 
-	fdw = open("/dev/xdma0_h2c_0", O_WRONLY);
-	fdr = open("/dev/xdma0_c2h_0", O_RDONLY);
+	fdw = open("/dev/zdma0_h2c_0", O_WRONLY);
+	fdr = open("/dev/zdma0_c2h_0", O_RDONLY);
 	if (fdr < 0) {
 		perror("open() read path failed");
 		return 1;

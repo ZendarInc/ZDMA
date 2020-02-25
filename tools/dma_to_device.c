@@ -42,7 +42,7 @@ static struct option const long_opts[] = {
 	{0, 0, 0, 0}
 };
 
-#define DEVICE_NAME_DEFAULT "/dev/xdma0_h2c_0"
+#define DEVICE_NAME_DEFAULT "/dev/zdma0_h2c_0"
 #define SIZE_DEFAULT (32)
 #define COUNT_DEFAULT (1)
 

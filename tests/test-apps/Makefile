@@ -35,14 +35,14 @@ ifdef NV_BUILD_DGPU
 endif
 
 TARGETS :=
-TARGETS += xdma-malloc
-TARGETS += xdma-h2c-perf
-TARGETS += xdma-c2h-perf
+TARGETS += zdma-malloc
+TARGETS += zdma-h2c-perf
+TARGETS += zdma-c2h-perf
 TARGETS += cuda-babe
 
 default: $(TARGETS)
 
-xdma%: xdma%.c Makefile
+zdma%: zdma%.c Makefile
 	$(CC) $(CFLAGS) -o $@ $< -lm
 
 cuda-babe: cuda-babe.cu Makefile

@@ -6,21 +6,21 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Remove the existing xdma kernel module
-lsmod | grep xdma
+# Remove the existing zdma kernel module
+lsmod | grep zdma
 if [ $? -eq 0 ]; then
-   rmmod xdma
+   rmmod zdma
 fi
-echo -n "Loading xdma driver..."
+echo -n "Loading zdma driver..."
 # Use the following command to Load the driver in the default 
 # or interrupt drive mode. This will allow the driver to use 
 # interrupts to signal when DMA transfers are completed.
-insmod ../xdma/xdma.ko
+insmod ../zdma/zdma.ko
 # Use the following command to Load the driver in Polling
 # mode rather than than interrupt mode. This will allow the
 # driver to use polling to determ when DMA transfers are 
 # completed.
-#insmod ../xdma/xdma.ko poll_mode=1
+#insmod ../zdma/zdma.ko poll_mode=1
 
 if [ ! $? == 0 ]; then
   echo "Error: Kernel module did not load properly."
@@ -28,9 +28,9 @@ if [ ! $? == 0 ]; then
   exit 1
 fi
 
-# Check to see if the xdma devices were recognized
+# Check to see if the zdma devices were recognized
 echo ""
-cat /proc/devices | grep xdma > /dev/null
+cat /proc/devices | grep zdma > /dev/null
 returnVal=$?
 if [ $returnVal == 0 ]; then
   # Installed devices were recognized.
