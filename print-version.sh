@@ -9,3 +9,4 @@ then
 fi
 
 echo -n 0.0."${timestamp}~${git_hash}"
+#echo -n 0.0."${timestamp}"
