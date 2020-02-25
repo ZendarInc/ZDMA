@@ -36,7 +36,6 @@ enum cdev_type {
 static const char * const devnode_names[] = {
 	ZDMA_NODE_NAME "%d_user",
 	ZDMA_NODE_NAME "%d_control",
-	ZDMA_NODE_NAME "%d_xvc",
 	ZDMA_NODE_NAME "%d_events_%d",
 	ZDMA_NODE_NAME "%d_h2c_%d",
 	ZDMA_NODE_NAME "%d_c2h_%d"
