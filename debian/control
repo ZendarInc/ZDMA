@@ -1,0 +1,8 @@
+Source: zdma-dkms
+Maintainer: Vincent Bernat <bernat@debian.org>
+Build-Depends: debhelper (>= 9), dkms
+
+Package: zdma-dkms
+Architecture: all
+Depends: ${misc:Depends}
+Description: DKMS source for the Zendar DMA driver.
