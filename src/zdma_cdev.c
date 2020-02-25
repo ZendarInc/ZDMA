@@ -28,7 +28,6 @@ struct kmem_cache *cdev_cache;
 enum cdev_type {
 	CHAR_USER,
 	CHAR_CTRL,
-	CHAR_XVC,
 	CHAR_EVENTS,
 	CHAR_ZDMA_H2C,
 	CHAR_ZDMA_C2H
@@ -46,7 +45,6 @@ static const char * const devnode_names[] = {
 enum zpdev_flags_bits {
 	XDF_CDEV_USER,
 	XDF_CDEV_CTRL,
-	XDF_CDEV_XVC,
 	XDF_CDEV_EVENT,
 	XDF_CDEV_SG,
 };
@@ -102,10 +100,6 @@ static int config_kobject(struct zdma_cdev *zcdev, enum cdev_type type)
 		break;
 	case CHAR_USER:
 	case CHAR_CTRL:
-	case CHAR_XVC:
-		rv = kobject_set_name(&zcdev->cdev.kobj, devnode_names[type],
-			zdev->idx);
-		break;
 	case CHAR_EVENTS:
 		rv = kobject_set_name(&zcdev->cdev.kobj, devnode_names[type],
 			zdev->idx, zcdev->bar);
@@ -405,13 +399,6 @@ void zpdev_destroy_interfaces(struct zdma_pci_dev *zpdev)
 				i, rv);
 	}
 
-	if (zpdev_flag_test(zpdev, XDF_CDEV_XVC)) {
-		rv = destroy_zcdev(&zpdev->xvc_cdev);
-		if (rv < 0)
-			pr_err("Failed to destroy xvc cdev %d error 0x%x\n",
-				i, rv);
-	}
-
 	if (zpdev->major)
 		unregister_chrdev_region(
 				MKDEV(zpdev->major, ZDMA_MINOR_BASE),
@@ -484,15 +471,6 @@ int zpdev_create_interfaces(struct zdma_pci_dev *zpdev)
 			goto fail;
 		}
 		zpdev_flag_set(zpdev, XDF_CDEV_USER);
-
-		/* xvc */
-		rv = create_zcdev(zpdev, &zpdev->xvc_cdev, zdev->user_bar_idx,
-				 NULL, CHAR_XVC);
-		if (rv < 0) {
-			pr_err("create xvc failed, %d.\n", rv);
-			goto fail;
-		}
-		zpdev_flag_set(zpdev, XDF_CDEV_XVC);
 	}
 
 #ifdef __ZDMA_SYSFS__
