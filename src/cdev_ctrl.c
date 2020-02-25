@@ -21,7 +21,7 @@
 
 #include "version.h"
 #include "cdev_ctrl.h"
-#include "xdma_cdev.h"
+#include "zdma_cdev.h"
 
 #include <linux/ioctl.h>
 #include <linux/types.h>
@@ -34,22 +34,22 @@
 static ssize_t char_ctrl_read(struct file *fp, char __user *buf, size_t count,
 		loff_t *pos)
 {
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)fp->private_data;
-	struct xdma_dev *xdev;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)fp->private_data;
+	struct zdma_dev *zdev;
 	void __iomem *reg;
 	u32 w;
 	int rv;
 
-	rv = xcdev_check(__func__, xcdev, 0);
+	rv = zcdev_check(__func__, zcdev, 0);
 	if (rv < 0)
 		return rv;
-	xdev = xcdev->xdev;
+	zdev = zcdev->zdev;
 
 	/* only 32-bit aligned and 32-bit multiples */
 	if (*pos & 3)
 		return -EPROTO;
 	/* first address is BAR base plus file position offset */
-	reg = xdev->bar[xcdev->bar] + *pos;
+	reg = zdev->bar[zcdev->bar] + *pos;
 	//w = read_register(reg);
 	w = ioread32(reg);
 	dbg_sg("%s(@%p, count=%ld, pos=%d) value = 0x%08x\n",
@@ -65,23 +65,23 @@ static ssize_t char_ctrl_read(struct file *fp, char __user *buf, size_t count,
 static ssize_t char_ctrl_write(struct file *file, const char __user *buf,
 			size_t count, loff_t *pos)
 {
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
-	struct xdma_dev *xdev;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
+	struct zdma_dev *zdev;
 	void __iomem *reg;
 	u32 w;
 	int rv;
 
-	rv = xcdev_check(__func__, xcdev, 0);
+	rv = zcdev_check(__func__, zcdev, 0);
 	if (rv < 0)
 		return rv;
-	xdev = xcdev->xdev;
+	zdev = zcdev->zdev;
 
 	/* only 32-bit aligned and 32-bit multiples */
 	if (*pos & 3)
 		return -EPROTO;
 
 	/* first address is BAR base plus file position offset */
-	reg = xdev->bar[xcdev->bar] + *pos;
+	reg = zdev->bar[zcdev->bar] + *pos;
 	rv = copy_from_user(&w, buf, 4);
 	if (rv)
 		pr_info("copy from user failed %d/4, but continuing.\n", rv);
@@ -94,56 +94,56 @@ static ssize_t char_ctrl_write(struct file *file, const char __user *buf,
 	return 4;
 }
 
-static long version_ioctl(struct xdma_cdev *xcdev, void __user *arg)
+static long version_ioctl(struct zdma_cdev *zcdev, void __user *arg)
 {
-	struct xdma_ioc_info obj;
-	struct xdma_dev *xdev = xcdev->xdev;
+	struct zdma_ioc_info obj;
+	struct zdma_dev *zdev = zcdev->zdev;
 	int rv;
 
-	rv = copy_from_user((void *)&obj, arg, sizeof(struct xdma_ioc_info));
+	rv = copy_from_user((void *)&obj, arg, sizeof(struct zdma_ioc_info));
 	if (rv) {
 		pr_info("copy from user failed %d/%ld.\n",
-			rv, sizeof(struct xdma_ioc_info));
+			rv, sizeof(struct zdma_ioc_info));
 		return -EFAULT;
 	}
 	memset(&obj, 0, sizeof(obj));
-	obj.vendor = xdev->pdev->vendor;
-	obj.device = xdev->pdev->device;
-	obj.subsystem_vendor = xdev->pdev->subsystem_vendor;
-	obj.subsystem_device = xdev->pdev->subsystem_device;
-	obj.feature_id = xdev->feature_id;
+	obj.vendor = zdev->pdev->vendor;
+	obj.device = zdev->pdev->device;
+	obj.subsystem_vendor = zdev->pdev->subsystem_vendor;
+	obj.subsystem_device = zdev->pdev->subsystem_device;
+	obj.feature_id = zdev->feature_id;
 	obj.driver_version = DRV_MOD_VERSION_NUMBER;
 	obj.domain = 0;
-	obj.bus = PCI_BUS_NUM(xdev->pdev->devfn);
-	obj.dev = PCI_SLOT(xdev->pdev->devfn);
-	obj.func = PCI_FUNC(xdev->pdev->devfn);
-	if (copy_to_user(arg, &obj, sizeof(struct xdma_ioc_info)))
+	obj.bus = PCI_BUS_NUM(zdev->pdev->devfn);
+	obj.dev = PCI_SLOT(zdev->pdev->devfn);
+	obj.func = PCI_FUNC(zdev->pdev->devfn);
+	if (copy_to_user(arg, &obj, sizeof(struct zdma_ioc_info)))
 		return -EFAULT;
 	return 0;
 }
 
 long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)filp->private_data;
-	struct xdma_dev *xdev;
-	struct xdma_ioc_base ioctl_obj;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)filp->private_data;
+	struct zdma_dev *zdev;
+	struct zdma_ioc_base ioctl_obj;
 	long result = 0;
 	int rv;
 
-	rv = xcdev_check(__func__, xcdev, 0);
+	rv = zcdev_check(__func__, zcdev, 0);
 	if (rv < 0)
 		return rv;
 
-	xdev = xcdev->xdev;
-	if (!xdev) {
-		pr_info("cmd %u, xdev NULL.\n", cmd);
+	zdev = zcdev->zdev;
+	if (!zdev) {
+		pr_info("cmd %u, zdev NULL.\n", cmd);
 		return -EINVAL;
 	}
-	pr_info("cmd 0x%x, xdev 0x%p, pdev 0x%p.\n", cmd, xdev, xdev->pdev);
+	pr_info("cmd 0x%x, zdev 0x%p, pdev 0x%p.\n", cmd, zdev, zdev->pdev);
 
-	if (_IOC_TYPE(cmd) != XDMA_IOC_MAGIC) {
+	if (_IOC_TYPE(cmd) != ZDMA_IOC_MAGIC) {
 		pr_err("cmd %u, bad magic 0x%x/0x%x.\n",
-			 cmd, _IOC_TYPE(cmd), XDMA_IOC_MAGIC);
+			 cmd, _IOC_TYPE(cmd), ZDMA_IOC_MAGIC);
 		return -ENOTTY;
 	}
 
@@ -160,24 +160,24 @@ long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	}
 
 	switch (cmd) {
-	case XDMA_IOCINFO:
+	case ZDMA_IOCINFO:
 		if (copy_from_user((void *)&ioctl_obj, (void __user *) arg,
-			 sizeof(struct xdma_ioc_base))) {
+			 sizeof(struct zdma_ioc_base))) {
 			pr_err("copy_from_user failed.\n");
 			return -EFAULT;
 		}
 
-		if (ioctl_obj.magic != XDMA_XCL_MAGIC) {
-			pr_err("magic 0x%x !=  XDMA_XCL_MAGIC (0x%x).\n",
-				ioctl_obj.magic, XDMA_XCL_MAGIC);
+		if (ioctl_obj.magic != ZDMA_XCL_MAGIC) {
+			pr_err("magic 0x%x !=  ZDMA_XCL_MAGIC (0x%x).\n",
+				ioctl_obj.magic, ZDMA_XCL_MAGIC);
 			return -ENOTTY;
 		}
-		return version_ioctl(xcdev, (void __user *)arg);
-	case XDMA_IOCOFFLINE:
-		xdma_device_offline(xdev->pdev, xdev);
+		return version_ioctl(zcdev, (void __user *)arg);
+	case ZDMA_IOCOFFLINE:
+		zdma_device_offline(zdev->pdev, zdev);
 		break;
-	case XDMA_IOCONLINE:
-		xdma_device_online(xdev->pdev, xdev);
+	case ZDMA_IOCONLINE:
+		zdma_device_online(zdev->pdev, zdev);
 		break;
 	default:
 		pr_err("UNKNOWN ioctl cmd 0x%x.\n", cmd);
@@ -189,36 +189,36 @@ long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 /* maps the PCIe BAR into user space for memory-like access using mmap() */
 int bridge_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	struct xdma_dev *xdev;
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
+	struct zdma_dev *zdev;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
 	unsigned long off;
 	unsigned long phys;
 	unsigned long vsize;
 	unsigned long psize;
 	int rv;
 
-	rv = xcdev_check(__func__, xcdev, 0);
+	rv = zcdev_check(__func__, zcdev, 0);
 	if (rv < 0)
 		return rv;
-	xdev = xcdev->xdev;
+	zdev = zcdev->zdev;
 
 	off = vma->vm_pgoff << PAGE_SHIFT;
 	/* BAR physical address */
-	phys = pci_resource_start(xdev->pdev, xcdev->bar) + off;
+	phys = pci_resource_start(zdev->pdev, zcdev->bar) + off;
 	vsize = vma->vm_end - vma->vm_start;
 	/* complete resource */
-	psize = pci_resource_end(xdev->pdev, xcdev->bar) -
-		pci_resource_start(xdev->pdev, xcdev->bar) + 1 - off;
+	psize = pci_resource_end(zdev->pdev, zcdev->bar) -
+		pci_resource_start(zdev->pdev, zcdev->bar) + 1 - off;
 
-	dbg_sg("mmap(): xcdev = 0x%08lx\n", (unsigned long)xcdev);
-	dbg_sg("mmap(): cdev->bar = %d\n", xcdev->bar);
-	dbg_sg("mmap(): xdev = 0x%p\n", xdev);
-	dbg_sg("mmap(): pci_dev = 0x%08lx\n", (unsigned long)xdev->pdev);
+	dbg_sg("mmap(): zcdev = 0x%08lx\n", (unsigned long)zcdev);
+	dbg_sg("mmap(): cdev->bar = %d\n", zcdev->bar);
+	dbg_sg("mmap(): zdev = 0x%p\n", zdev);
+	dbg_sg("mmap(): pci_dev = 0x%08lx\n", (unsigned long)zdev->pdev);
 
 	dbg_sg("off = 0x%lx\n", off);
 	dbg_sg("start = 0x%llx\n",
-		(unsigned long long)pci_resource_start(xdev->pdev,
-		xcdev->bar));
+		(unsigned long long)pci_resource_start(zdev->pdev,
+		zcdev->bar));
 	dbg_sg("phys = 0x%lx\n", phys);
 
 	if (vsize > psize)
@@ -257,7 +257,7 @@ static const struct file_operations ctrl_fops = {
 	.unlocked_ioctl = char_ctrl_ioctl,
 };
 
-void cdev_ctrl_init(struct xdma_cdev *xcdev)
+void cdev_ctrl_init(struct zdma_cdev *zcdev)
 {
-	cdev_init(&xcdev->cdev, &ctrl_fops);
+	cdev_init(&zcdev->cdev, &ctrl_fops);
 }

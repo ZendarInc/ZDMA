@@ -17,8 +17,8 @@
  * the file called "COPYING".
  */
 
-#ifndef __XDMA_VERSION_H__
-#define __XDMA_VERSION_H__
+#ifndef __ZDMA_VERSION_H__
+#define __ZDMA_VERSION_H__
 
 #define DRV_MOD_MAJOR		2020
 #define DRV_MOD_MINOR		1
@@ -32,4 +32,4 @@
 #define DRV_MOD_VERSION_NUMBER  \
 	((DRV_MOD_MAJOR)*1000 + (DRV_MOD_MINOR)*100 + DRV_MOD_PATCHLEVEL)
 
-#endif /* ifndef __XDMA_VERSION_H__ */
+#endif /* ifndef __ZDMA_VERSION_H__ */

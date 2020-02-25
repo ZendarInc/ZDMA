@@ -17,8 +17,8 @@
  * the file called "COPYING".
  */
 
-#ifndef XDMA_LIB_H
-#define XDMA_LIB_H
+#ifndef ZDMA_LIB_H
+#define ZDMA_LIB_H
 
 #include <linux/version.h>
 #include <linux/types.h>
@@ -35,121 +35,121 @@
  *	if the config bar is fixed, the driver does not need to search through
  *	all of the bars
  */
-//#define XDMA_CONFIG_BAR_NUM	1
+//#define ZDMA_CONFIG_BAR_NUM	1
 
 /* SECTION: Preprocessor macros/constants */
-#define XDMA_BAR_NUM (6)
+#define ZDMA_BAR_NUM (6)
 
 /* maximum amount of register space to map */
-#define XDMA_BAR_SIZE (0x8000UL)
+#define ZDMA_BAR_SIZE (0x8000UL)
 
-#define XDMA_CHANNEL_NUM_MAX (4)
+#define ZDMA_CHANNEL_NUM_MAX (4)
 /*
  * interrupts per engine, rad2_vul.sv:237
  * .REG_IRQ_OUT	(reg_irq_from_ch[(channel*2) +: 2]),
  */
-#define XDMA_ENG_IRQ_NUM (1)
+#define ZDMA_ENG_IRQ_NUM (1)
 #define MAX_EXTRA_ADJ (63)
 
-/* Target internal components on XDMA control BAR */
-#define XDMA_OFS_INT_CTRL	(0x2000UL)
-#define XDMA_OFS_CONFIG		(0x3000UL)
+/* Target internal components on ZDMA control BAR */
+#define ZDMA_OFS_INT_CTRL	(0x2000UL)
+#define ZDMA_OFS_CONFIG		(0x3000UL)
 
 /* maximum number of desc per transfer request */
-#define XDMA_TRANSFER_MAX_DESC (512)
+#define ZDMA_TRANSFER_MAX_DESC (512)
 
 /* maximum size of a single DMA transfer descriptor */
-#define XDMA_DESC_BLEN_BITS	28
-#define XDMA_DESC_BLEN_MAX	((1 << (XDMA_DESC_BLEN_BITS)) - 1)
+#define ZDMA_DESC_BLEN_BITS	28
+#define ZDMA_DESC_BLEN_MAX	((1 << (ZDMA_DESC_BLEN_BITS)) - 1)
 
 /* bits of the SG DMA control register */
-#define XDMA_CTRL_RUN_STOP			(1UL << 0)
-#define XDMA_CTRL_IE_DESC_STOPPED		(1UL << 1)
-#define XDMA_CTRL_IE_DESC_COMPLETED		(1UL << 2)
-#define XDMA_CTRL_IE_DESC_ALIGN_MISMATCH	(1UL << 3)
-#define XDMA_CTRL_IE_MAGIC_STOPPED		(1UL << 4)
-#define XDMA_CTRL_IE_IDLE_STOPPED		(1UL << 6)
-#define XDMA_CTRL_IE_READ_ERROR			(0x1FUL << 9)
-#define XDMA_CTRL_IE_DESC_ERROR			(0x1FUL << 19)
-#define XDMA_CTRL_NON_INCR_ADDR			(1UL << 25)
-#define XDMA_CTRL_POLL_MODE_WB			(1UL << 26)
-#define XDMA_CTRL_STM_MODE_WB			(1UL << 27)
+#define ZDMA_CTRL_RUN_STOP			(1UL << 0)
+#define ZDMA_CTRL_IE_DESC_STOPPED		(1UL << 1)
+#define ZDMA_CTRL_IE_DESC_COMPLETED		(1UL << 2)
+#define ZDMA_CTRL_IE_DESC_ALIGN_MISMATCH	(1UL << 3)
+#define ZDMA_CTRL_IE_MAGIC_STOPPED		(1UL << 4)
+#define ZDMA_CTRL_IE_IDLE_STOPPED		(1UL << 6)
+#define ZDMA_CTRL_IE_READ_ERROR			(0x1FUL << 9)
+#define ZDMA_CTRL_IE_DESC_ERROR			(0x1FUL << 19)
+#define ZDMA_CTRL_NON_INCR_ADDR			(1UL << 25)
+#define ZDMA_CTRL_POLL_MODE_WB			(1UL << 26)
+#define ZDMA_CTRL_STM_MODE_WB			(1UL << 27)
 
 /* bits of the SG DMA status register */
-#define XDMA_STAT_BUSY			(1UL << 0)
-#define XDMA_STAT_DESC_STOPPED		(1UL << 1)
-#define XDMA_STAT_DESC_COMPLETED	(1UL << 2)
-#define XDMA_STAT_ALIGN_MISMATCH	(1UL << 3)
-#define XDMA_STAT_MAGIC_STOPPED		(1UL << 4)
-#define XDMA_STAT_INVALID_LEN		(1UL << 5)
-#define XDMA_STAT_IDLE_STOPPED		(1UL << 6)
+#define ZDMA_STAT_BUSY			(1UL << 0)
+#define ZDMA_STAT_DESC_STOPPED		(1UL << 1)
+#define ZDMA_STAT_DESC_COMPLETED	(1UL << 2)
+#define ZDMA_STAT_ALIGN_MISMATCH	(1UL << 3)
+#define ZDMA_STAT_MAGIC_STOPPED		(1UL << 4)
+#define ZDMA_STAT_INVALID_LEN		(1UL << 5)
+#define ZDMA_STAT_IDLE_STOPPED		(1UL << 6)
 
-#define XDMA_STAT_COMMON_ERR_MASK \
-	(XDMA_STAT_ALIGN_MISMATCH | XDMA_STAT_MAGIC_STOPPED | \
-	 XDMA_STAT_INVALID_LEN)
+#define ZDMA_STAT_COMMON_ERR_MASK \
+	(ZDMA_STAT_ALIGN_MISMATCH | ZDMA_STAT_MAGIC_STOPPED | \
+	 ZDMA_STAT_INVALID_LEN)
 
 /* desc_error, C2H & H2C */
-#define XDMA_STAT_DESC_UNSUPP_REQ	(1UL << 19)
-#define XDMA_STAT_DESC_COMPL_ABORT	(1UL << 20)
-#define XDMA_STAT_DESC_PARITY_ERR	(1UL << 21)
-#define XDMA_STAT_DESC_HEADER_EP	(1UL << 22)
-#define XDMA_STAT_DESC_UNEXP_COMPL	(1UL << 23)
+#define ZDMA_STAT_DESC_UNSUPP_REQ	(1UL << 19)
+#define ZDMA_STAT_DESC_COMPL_ABORT	(1UL << 20)
+#define ZDMA_STAT_DESC_PARITY_ERR	(1UL << 21)
+#define ZDMA_STAT_DESC_HEADER_EP	(1UL << 22)
+#define ZDMA_STAT_DESC_UNEXP_COMPL	(1UL << 23)
 
-#define XDMA_STAT_DESC_ERR_MASK	\
-	(XDMA_STAT_DESC_UNSUPP_REQ | XDMA_STAT_DESC_COMPL_ABORT | \
-	 XDMA_STAT_DESC_PARITY_ERR | XDMA_STAT_DESC_HEADER_EP | \
-	 XDMA_STAT_DESC_UNEXP_COMPL)
+#define ZDMA_STAT_DESC_ERR_MASK	\
+	(ZDMA_STAT_DESC_UNSUPP_REQ | ZDMA_STAT_DESC_COMPL_ABORT | \
+	 ZDMA_STAT_DESC_PARITY_ERR | ZDMA_STAT_DESC_HEADER_EP | \
+	 ZDMA_STAT_DESC_UNEXP_COMPL)
 
 /* read error: H2C */
-#define XDMA_STAT_H2C_R_UNSUPP_REQ	(1UL << 9)
-#define XDMA_STAT_H2C_R_COMPL_ABORT	(1UL << 10)
-#define XDMA_STAT_H2C_R_PARITY_ERR	(1UL << 11)
-#define XDMA_STAT_H2C_R_HEADER_EP	(1UL << 12)
-#define XDMA_STAT_H2C_R_UNEXP_COMPL	(1UL << 13)
+#define ZDMA_STAT_H2C_R_UNSUPP_REQ	(1UL << 9)
+#define ZDMA_STAT_H2C_R_COMPL_ABORT	(1UL << 10)
+#define ZDMA_STAT_H2C_R_PARITY_ERR	(1UL << 11)
+#define ZDMA_STAT_H2C_R_HEADER_EP	(1UL << 12)
+#define ZDMA_STAT_H2C_R_UNEXP_COMPL	(1UL << 13)
 
-#define XDMA_STAT_H2C_R_ERR_MASK	\
-	(XDMA_STAT_H2C_R_UNSUPP_REQ | XDMA_STAT_H2C_R_COMPL_ABORT | \
-	 XDMA_STAT_H2C_R_PARITY_ERR | XDMA_STAT_H2C_R_HEADER_EP | \
-	 XDMA_STAT_H2C_R_UNEXP_COMPL)
+#define ZDMA_STAT_H2C_R_ERR_MASK	\
+	(ZDMA_STAT_H2C_R_UNSUPP_REQ | ZDMA_STAT_H2C_R_COMPL_ABORT | \
+	 ZDMA_STAT_H2C_R_PARITY_ERR | ZDMA_STAT_H2C_R_HEADER_EP | \
+	 ZDMA_STAT_H2C_R_UNEXP_COMPL)
 
 /* write error, H2C only */
-#define XDMA_STAT_H2C_W_DECODE_ERR	(1UL << 14)
-#define XDMA_STAT_H2C_W_SLAVE_ERR	(1UL << 15)
+#define ZDMA_STAT_H2C_W_DECODE_ERR	(1UL << 14)
+#define ZDMA_STAT_H2C_W_SLAVE_ERR	(1UL << 15)
 
-#define XDMA_STAT_H2C_W_ERR_MASK	\
-	(XDMA_STAT_H2C_W_DECODE_ERR | XDMA_STAT_H2C_W_SLAVE_ERR)
+#define ZDMA_STAT_H2C_W_ERR_MASK	\
+	(ZDMA_STAT_H2C_W_DECODE_ERR | ZDMA_STAT_H2C_W_SLAVE_ERR)
 
 /* read error: C2H */
-#define XDMA_STAT_C2H_R_DECODE_ERR	(1UL << 9)
-#define XDMA_STAT_C2H_R_SLAVE_ERR	(1UL << 10)
+#define ZDMA_STAT_C2H_R_DECODE_ERR	(1UL << 9)
+#define ZDMA_STAT_C2H_R_SLAVE_ERR	(1UL << 10)
 
-#define XDMA_STAT_C2H_R_ERR_MASK	\
-	(XDMA_STAT_C2H_R_DECODE_ERR | XDMA_STAT_C2H_R_SLAVE_ERR)
+#define ZDMA_STAT_C2H_R_ERR_MASK	\
+	(ZDMA_STAT_C2H_R_DECODE_ERR | ZDMA_STAT_C2H_R_SLAVE_ERR)
 
 /* all combined */
-#define XDMA_STAT_H2C_ERR_MASK	\
-	(XDMA_STAT_COMMON_ERR_MASK | XDMA_STAT_DESC_ERR_MASK | \
-	 XDMA_STAT_H2C_R_ERR_MASK | XDMA_STAT_H2C_W_ERR_MASK)
+#define ZDMA_STAT_H2C_ERR_MASK	\
+	(ZDMA_STAT_COMMON_ERR_MASK | ZDMA_STAT_DESC_ERR_MASK | \
+	 ZDMA_STAT_H2C_R_ERR_MASK | ZDMA_STAT_H2C_W_ERR_MASK)
 
-#define XDMA_STAT_C2H_ERR_MASK	\
-	(XDMA_STAT_COMMON_ERR_MASK | XDMA_STAT_DESC_ERR_MASK | \
-	 XDMA_STAT_C2H_R_ERR_MASK)
+#define ZDMA_STAT_C2H_ERR_MASK	\
+	(ZDMA_STAT_COMMON_ERR_MASK | ZDMA_STAT_DESC_ERR_MASK | \
+	 ZDMA_STAT_C2H_R_ERR_MASK)
 
 /* bits of the SGDMA descriptor control field */
-#define XDMA_DESC_STOPPED	(1UL << 0)
-#define XDMA_DESC_COMPLETED	(1UL << 1)
-#define XDMA_DESC_EOP		(1UL << 4)
+#define ZDMA_DESC_STOPPED	(1UL << 0)
+#define ZDMA_DESC_COMPLETED	(1UL << 1)
+#define ZDMA_DESC_EOP		(1UL << 4)
 
-#define XDMA_PERF_RUN	(1UL << 0)
-#define XDMA_PERF_CLEAR	(1UL << 1)
-#define XDMA_PERF_AUTO	(1UL << 2)
+#define ZDMA_PERF_RUN	(1UL << 0)
+#define ZDMA_PERF_CLEAR	(1UL << 1)
+#define ZDMA_PERF_AUTO	(1UL << 2)
 
 #define MAGIC_ENGINE	0xEEEEEEEEUL
 #define MAGIC_DEVICE	0xDDDDDDDDUL
 
 /* upper 16-bits of engine identifier register */
-#define XDMA_ID_H2C 0x1fc0U
-#define XDMA_ID_C2H 0x1fc1U
+#define ZDMA_ID_H2C 0x1fc0U
+#define ZDMA_ID_C2H 0x1fc1U
 
 /* x86 assumptions needed for Tegra arch */
 #define PAGE_SIZE_X86 0x1000
@@ -191,7 +191,7 @@
 	#define VMEM_FLAGS (VM_IO | VM_RESERVED)
 #endif
 
-#ifdef __LIBXDMA_DEBUG__
+#ifdef __LIBZDMA_DEBUG__
 #define dbg_io		pr_err
 #define dbg_fops	pr_err
 #define dbg_perf	pr_err
@@ -236,7 +236,7 @@ enum dev_capabilities {
 
 /* SECTION: Structure definitions */
 
-struct xdma_io_cb {
+struct zdma_io_cb {
 	void __user *buf;
 	size_t len;
 	void *private;
@@ -248,7 +248,7 @@ struct xdma_io_cb {
 	/** MM only, DDR/BRAM memory addr */
 	u64 ep_addr;
 	/** write: if write to the device */
-	struct xdma_request_cb *req;
+	struct zdma_request_cb *req;
 	u8 write:1;
 	void (*io_done)(unsigned long cb_hndl, int err);
 };
@@ -361,7 +361,7 @@ struct sgdma_common_regs {
 
 
 /* Structure for polled mode descriptor writeback */
-struct xdma_poll_wb {
+struct zdma_poll_wb {
 	u32 completed_desc_count;
 	u32 reserved_1[7];
 } __packed;
@@ -376,7 +376,7 @@ struct xdma_poll_wb {
  * The descriptors are in root complex memory, and the bytes in the 32-bit
  * words must be in little-endian byte ordering.
  */
-struct xdma_desc {
+struct zdma_desc {
 	u32 control;
 	u32 bytes;		/* transfer length in bytes */
 	u32 src_addr_lo;	/* source address (low 32-bit) */
@@ -393,7 +393,7 @@ struct xdma_desc {
 } __packed;
 
 /* 32 bytes (four 32-bit words) or 64 bytes (eight 32-bit words) */
-struct xdma_result {
+struct zdma_result {
 	u32 status;
 	u32 length;
 	u32 reserved_1[6];	/* padding */
@@ -405,9 +405,9 @@ struct sw_desc {
 };
 
 /* Describes a (SG DMA) single transfer for the engine */
-struct xdma_transfer {
+struct zdma_transfer {
 	struct list_head entry;		/* queue of non-completed transfers */
-	struct xdma_desc *desc_virt;	/* virt addr of the 1st descriptor */
+	struct zdma_desc *desc_virt;	/* virt addr of the 1st descriptor */
 	dma_addr_t desc_bus;		/* bus addr of the first descriptor */
 	int desc_adjacent;		/* adjacent descriptors at desc_bus */
 	int desc_num;			/* number of descriptors in transfer */
@@ -420,25 +420,25 @@ struct xdma_transfer {
 	int last_in_request;		/* flag if last within request */
 	unsigned int len;
 	struct sg_table *sgt;
-	struct xdma_io_cb *cb;
+	struct zdma_io_cb *cb;
 };
 
-struct xdma_request_cb {
+struct zdma_request_cb {
 	struct sg_table *sgt;
 	unsigned int total_len;
 	u64 ep_addr;
 
-	struct xdma_transfer tfer[2]; /* Use two transfers in case single request needs to be split */
-	struct xdma_io_cb *cb;
+	struct zdma_transfer tfer[2]; /* Use two transfers in case single request needs to be split */
+	struct zdma_io_cb *cb;
 
 	unsigned int sw_desc_idx;
 	unsigned int sw_desc_cnt;
 	struct sw_desc sdesc[0];
 };
 
-struct xdma_engine {
+struct zdma_engine {
 	unsigned long magic;	/* structure ID for sanity checks */
-	struct xdma_dev *xdev;	/* parent device */
+	struct zdma_dev *zdev;	/* parent device */
 	char name[5];		/* name of this engine */
 	int version;		/* version of this engine */
 
@@ -476,13 +476,13 @@ struct xdma_engine {
 
 	struct mutex desc_lock;		/* protects concurrent access */
 	dma_addr_t desc_bus;
-	struct xdma_desc *desc;
+	struct zdma_desc *desc;
 	int desc_idx;			/* current descriptor index */
 	int desc_used;			/* total descriptors used */
 };
 
-struct xdma_user_irq {
-	struct xdma_dev *xdev;		/* parent device */
+struct zdma_user_irq {
+	struct zdma_dev *zdev;		/* parent device */
 	u8 user_idx;			/* 0 ~ 15 */
 	u8 events_irq;			/* accumulated IRQs */
 	spinlock_t events_lock;		/* lock to safely update events_irq */
@@ -492,9 +492,9 @@ struct xdma_user_irq {
 	void *dev;
 };
 
-/* XDMA PCIe device specific book-keeping */
+/* ZDMA PCIe device specific book-keeping */
 #define XDEV_FLAG_OFFLINE	0x1
-struct xdma_dev {
+struct zdma_dev {
 	struct list_head list_head;
 	struct list_head rcu_node;
 
@@ -508,10 +508,10 @@ struct xdma_dev {
 	unsigned int flags;
 
 	/* PCIe BAR management */
-	void __iomem *bar[XDMA_BAR_NUM];	/* addresses for mapped BARs */
+	void __iomem *bar[ZDMA_BAR_NUM];	/* addresses for mapped BARs */
 	int user_bar_idx;	/* BAR index of user logic */
-	int config_bar_idx;	/* BAR index of XDMA config logic */
-	int bypass_bar_idx;	/* BAR index of XDMA bypass logic */
+	int config_bar_idx;	/* BAR index of ZDMA config logic */
+	int bypass_bar_idx;	/* BAR index of ZDMA bypass logic */
 	int regions_in_use;	/* flag if dev was in use during probe() */
 	int got_regions;	/* flag if probe() obtained the regions */
 
@@ -527,74 +527,74 @@ struct xdma_dev {
 #if KERNEL_VERSION(4, 12, 0) > LINUX_VERSION_CODE
 	struct msix_entry entry[32];	/* msi-x vector/entry table */
 #endif
-	struct xdma_user_irq user_irq[16];	/* user IRQ management */
+	struct zdma_user_irq user_irq[16];	/* user IRQ management */
 	unsigned int mask_irq_user;
 
-	/* XDMA engine management */
+	/* ZDMA engine management */
 	int engines_num;	/* Total engine count */
 	u32 mask_irq_h2c;
 	u32 mask_irq_c2h;
-	struct xdma_engine engine_h2c[XDMA_CHANNEL_NUM_MAX];
-	struct xdma_engine engine_c2h[XDMA_CHANNEL_NUM_MAX];
+	struct zdma_engine engine_h2c[ZDMA_CHANNEL_NUM_MAX];
+	struct zdma_engine engine_c2h[ZDMA_CHANNEL_NUM_MAX];
 
 	/* SD_Accel specific */
 	enum dev_capabilities capabilities;
 	u64 feature_id;
 };
 
-static inline int xdma_device_flag_check(struct xdma_dev *xdev, unsigned int f)
+static inline int zdma_device_flag_check(struct zdma_dev *zdev, unsigned int f)
 {
 	unsigned long flags;
 
-	spin_lock_irqsave(&xdev->lock, flags);
-	if (xdev->flags & f) {
-		spin_unlock_irqrestore(&xdev->lock, flags);
+	spin_lock_irqsave(&zdev->lock, flags);
+	if (zdev->flags & f) {
+		spin_unlock_irqrestore(&zdev->lock, flags);
 		return 1;
 	}
-	spin_unlock_irqrestore(&xdev->lock, flags);
+	spin_unlock_irqrestore(&zdev->lock, flags);
 	return 0;
 }
 
-static inline int xdma_device_flag_test_n_set(struct xdma_dev *xdev,
+static inline int zdma_device_flag_test_n_set(struct zdma_dev *zdev,
 					 unsigned int f)
 {
 	unsigned long flags;
 	int rv = 0;
 
-	spin_lock_irqsave(&xdev->lock, flags);
-	if (xdev->flags & f) {
-		spin_unlock_irqrestore(&xdev->lock, flags);
+	spin_lock_irqsave(&zdev->lock, flags);
+	if (zdev->flags & f) {
+		spin_unlock_irqrestore(&zdev->lock, flags);
 		rv = 1;
 	} else
-		xdev->flags |= f;
-	spin_unlock_irqrestore(&xdev->lock, flags);
+		zdev->flags |= f;
+	spin_unlock_irqrestore(&zdev->lock, flags);
 	return rv;
 }
 
-static inline void xdma_device_flag_set(struct xdma_dev *xdev, unsigned int f)
+static inline void zdma_device_flag_set(struct zdma_dev *zdev, unsigned int f)
 {
 	unsigned long flags;
 
-	spin_lock_irqsave(&xdev->lock, flags);
-	xdev->flags |= f;
-	spin_unlock_irqrestore(&xdev->lock, flags);
+	spin_lock_irqsave(&zdev->lock, flags);
+	zdev->flags |= f;
+	spin_unlock_irqrestore(&zdev->lock, flags);
 }
 
-static inline void xdma_device_flag_clear(struct xdma_dev *xdev, unsigned int f)
+static inline void zdma_device_flag_clear(struct zdma_dev *zdev, unsigned int f)
 {
 	unsigned long flags;
 
-	spin_lock_irqsave(&xdev->lock, flags);
-	xdev->flags &= ~f;
-	spin_unlock_irqrestore(&xdev->lock, flags);
+	spin_lock_irqsave(&zdev->lock, flags);
+	zdev->flags &= ~f;
+	spin_unlock_irqrestore(&zdev->lock, flags);
 }
 
 void write_register(u32 value, void *iomem);
 u32 read_register(void *iomem);
 
-struct xdma_dev *xdev_find_by_pdev(struct pci_dev *pdev);
+struct zdma_dev *zdev_find_by_pdev(struct pci_dev *pdev);
 
-void xdma_device_offline(struct pci_dev *pdev, void *dev_handle);
-void xdma_device_online(struct pci_dev *pdev, void *dev_handle);
+void zdma_device_offline(struct pci_dev *pdev, void *dev_handle);
+void zdma_device_online(struct pci_dev *pdev, void *dev_handle);
 
-#endif /* XDMA_LIB_H */
+#endif /* ZDMA_LIB_H */

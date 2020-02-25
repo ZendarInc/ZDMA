@@ -17,33 +17,33 @@
  * the file called "COPYING".
  */
 
-#ifndef __XDMA_CHRDEV_H__
-#define __XDMA_CHRDEV_H__
+#ifndef __ZDMA_CHRDEV_H__
+#define __ZDMA_CHRDEV_H__
 
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/errno.h>
-#include "xdma_mod.h"
+#include "zdma_mod.h"
 
-#define XDMA_NODE_NAME	"xdma"
-#define XDMA_MINOR_BASE (0)
-#define XDMA_MINOR_COUNT (255)
+#define ZDMA_NODE_NAME	"zdma"
+#define ZDMA_MINOR_BASE (0)
+#define ZDMA_MINOR_COUNT (255)
 
-void xdma_cdev_cleanup(void);
-int xdma_cdev_init(void);
+void zdma_cdev_cleanup(void);
+int zdma_cdev_init(void);
 
 int char_open(struct inode *inode, struct file *file);
 int char_close(struct inode *inode, struct file *file);
-int xcdev_check(const char *fname, struct xdma_cdev *xcdev, bool check_engine);
-void cdev_ctrl_init(struct xdma_cdev *xcdev);
-void cdev_event_init(struct xdma_cdev *xcdev);
-void cdev_sgdma_init(struct xdma_cdev *xcdev);
+int zcdev_check(const char *fname, struct zdma_cdev *zcdev, bool check_engine);
+void cdev_ctrl_init(struct zdma_cdev *zcdev);
+void cdev_event_init(struct zdma_cdev *zcdev);
+void cdev_sgdma_init(struct zdma_cdev *zcdev);
 long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 
-void xpdev_destroy_interfaces(struct xdma_pci_dev *xpdev);
-int xpdev_create_interfaces(struct xdma_pci_dev *xpdev);
+void zpdev_destroy_interfaces(struct zdma_pci_dev *zpdev);
+int zpdev_create_interfaces(struct zdma_pci_dev *zpdev);
 
 int bridge_mmap(struct file *file, struct vm_area_struct *vma);
 
-#endif /* __XDMA_CHRDEV_H__ */
+#endif /* __ZDMA_CHRDEV_H__ */

@@ -30,8 +30,8 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 #include <linux/uio.h>
 #endif
-#include "libxdma_api.h"
-#include "xdma_cdev.h"
+#include "libzdma_api.h"
+#include "zdma_cdev.h"
 #include "cdev_sgdma.h"
 
 /* Module Parameters */
@@ -41,7 +41,7 @@ MODULE_PARM_DESC(sgdma_timeout, "timeout in seconds for sgdma, default is 10 sec
 
 
 extern struct kmem_cache *cdev_cache;
-static void char_sgdma_unmap_user_buf(struct xdma_io_cb *cb, bool write);
+static void char_sgdma_unmap_user_buf(struct zdma_io_cb *cb, bool write);
 
 
 /*
@@ -92,7 +92,7 @@ static loff_t char_sgdma_llseek(struct file *file, loff_t off, int whence)
  * to wake us on completion.
  */
 
-static int check_transfer_align(struct xdma_engine *engine,
+static int check_transfer_align(struct zdma_engine *engine,
 	const char __user *buf, size_t count, loff_t pos, int sync)
 {
 	if (!engine) {
@@ -142,7 +142,7 @@ static int check_transfer_align(struct xdma_engine *engine,
 	return 0;
 }
 
-static void char_sgdma_unmap_user_buf(struct xdma_io_cb *cb, bool write)
+static void char_sgdma_unmap_user_buf(struct zdma_io_cb *cb, bool write)
 {
 	int i;
 
@@ -167,7 +167,7 @@ static void char_sgdma_unmap_user_buf(struct xdma_io_cb *cb, bool write)
 	cb->pages = NULL;
 }
 
-static int char_sgdma_map_user_buf_to_sgl(struct xdma_io_cb *cb, bool write)
+static int char_sgdma_map_user_buf_to_sgl(struct zdma_io_cb *cb, bool write)
 {
 	struct sg_table *sgt = &cb->sgt;
 	unsigned long len = cb->len;
@@ -252,16 +252,16 @@ static ssize_t char_sgdma_read_write(struct file *file, const char __user *buf,
 {
 	int rv;
 	ssize_t res = 0;
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
-	struct xdma_dev *xdev;
-	struct xdma_engine *engine;
-	struct xdma_io_cb cb;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
+	struct zdma_dev *zdev;
+	struct zdma_engine *engine;
+	struct zdma_io_cb cb;
 
-	rv = xcdev_check(__func__, xcdev, 1);
+	rv = zcdev_check(__func__, zcdev, 1);
 	if (rv < 0)
 		return rv;
-	xdev = xcdev->xdev;
-	engine = xcdev->engine;
+	zdev = zcdev->zdev;
+	engine = zcdev->engine;
 
 	dbg_tfr("file 0x%p, priv 0x%p, buf 0x%p,%llu, pos %llu, W %d, %s.\n",
 		file, file->private_data, buf, (u64)count, (u64)*pos, write,
@@ -280,7 +280,7 @@ static ssize_t char_sgdma_read_write(struct file *file, const char __user *buf,
 		return rv;
 	}
 
-	memset(&cb, 0, sizeof(struct xdma_io_cb));
+	memset(&cb, 0, sizeof(struct zdma_io_cb));
 	cb.buf = (char __user *)buf;
 	cb.len = count;
 	cb.ep_addr = (u64)*pos;
@@ -289,7 +289,7 @@ static ssize_t char_sgdma_read_write(struct file *file, const char __user *buf,
 	if (rv < 0)
 		return rv;
 
-	res = xdma_xfer_submit(xdev, engine->channel, write, *pos, &cb.sgt,
+	res = zdma_xfer_submit(zdev, engine->channel, write, *pos, &cb.sgt,
 				sgdma_timeout * 1000);
 
 	char_sgdma_unmap_user_buf(&cb, write);
@@ -310,7 +310,7 @@ static ssize_t char_sgdma_read(struct file *file, char __user *buf,
 	return char_sgdma_read_write(file, buf, count, pos, 0);
 }
 
-static int ioctl_do_addrmode_get(struct xdma_engine *engine, unsigned long arg)
+static int ioctl_do_addrmode_get(struct zdma_engine *engine, unsigned long arg)
 {
 	int rv;
 	unsigned long src;
@@ -321,44 +321,44 @@ static int ioctl_do_addrmode_get(struct xdma_engine *engine, unsigned long arg)
 	}
 	src = !!engine->non_incr_addr;
 
-	dbg_perf("IOCTL_XDMA_ADDRMODE_GET\n");
+	dbg_perf("IOCTL_ZDMA_ADDRMODE_GET\n");
 	rv = put_user(src, (int __user *)arg);
 
 	return rv;
 }
 
-static int ioctl_do_align_get(struct xdma_engine *engine, unsigned long arg)
+static int ioctl_do_align_get(struct zdma_engine *engine, unsigned long arg)
 {
 	if (!engine) {
 		pr_err("Invalid DMA engine\n");
 		return -EINVAL;
 	}
 
-	dbg_perf("IOCTL_XDMA_ALIGN_GET\n");
+	dbg_perf("IOCTL_ZDMA_ALIGN_GET\n");
 	return put_user(engine->addr_align, (int __user *)arg);
 }
 
 static long char_sgdma_ioctl(struct file *file, unsigned int cmd,
 		unsigned long arg)
 {
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
-	struct xdma_dev *xdev;
-	struct xdma_engine *engine;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
+	struct zdma_dev *zdev;
+	struct zdma_engine *engine;
 
 	int rv = 0;
 
-	rv = xcdev_check(__func__, xcdev, 1);
+	rv = zcdev_check(__func__, zcdev, 1);
 	if (rv < 0)
 		return rv;
 
-	xdev = xcdev->xdev;
-	engine = xcdev->engine;
+	zdev = zcdev->zdev;
+	engine = zcdev->engine;
 
 	switch (cmd) {
-	case IOCTL_XDMA_ADDRMODE_GET:
+	case IOCTL_ZDMA_ADDRMODE_GET:
 		rv = ioctl_do_addrmode_get(engine, arg);
 		break;
-	case IOCTL_XDMA_ALIGN_GET:
+	case IOCTL_ZDMA_ALIGN_GET:
 		rv = ioctl_do_align_get(engine, arg);
 		break;
 	default:
@@ -372,28 +372,28 @@ static long char_sgdma_ioctl(struct file *file, unsigned int cmd,
 
 static int char_sgdma_open(struct inode *inode, struct file *file)
 {
-	struct xdma_cdev *xcdev;
-	struct xdma_engine *engine;
+	struct zdma_cdev *zcdev;
+	struct zdma_engine *engine;
 
 	char_open(inode, file);
 
-	xcdev = (struct xdma_cdev *)file->private_data;
-	engine = xcdev->engine;
+	zcdev = (struct zdma_cdev *)file->private_data;
+	engine = zcdev->engine;
 
 	return 0;
 }
 
 static int char_sgdma_close(struct inode *inode, struct file *file)
 {
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
-	struct xdma_engine *engine;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
+	struct zdma_engine *engine;
 	int rv;
 
-	rv = xcdev_check(__func__, xcdev, 1);
+	rv = zcdev_check(__func__, zcdev, 1);
 	if (rv < 0)
 		return rv;
 
-	engine = xcdev->engine;
+	engine = zcdev->engine;
 
 	return 0;
 }
@@ -408,7 +408,7 @@ static const struct file_operations sgdma_fops = {
 	.llseek = char_sgdma_llseek,
 };
 
-void cdev_sgdma_init(struct xdma_cdev *xcdev)
+void cdev_sgdma_init(struct zdma_cdev *zcdev)
 {
-	cdev_init(&xcdev->cdev, &sgdma_fops);
+	cdev_init(&zcdev->cdev, &sgdma_fops);
 }

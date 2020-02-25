@@ -17,15 +17,15 @@
  * the file called "COPYING".
  */
 
-#ifndef _XDMA_IOCALLS_POSIX_H_
-#define _XDMA_IOCALLS_POSIX_H_
+#ifndef _ZDMA_IOCALLS_POSIX_H_
+#define _ZDMA_IOCALLS_POSIX_H_
 
 #include <linux/ioctl.h>
 
-/* Use 'x' as magic number */
-#define XDMA_IOC_MAGIC	'x'
+/* Use 'z' as magic number */
+#define ZDMA_IOC_MAGIC	'z'
 /* XL OpenCL X->58(ASCII), L->6C(ASCII), O->0 C->C L->6C(ASCII); */
-#define XDMA_XCL_MAGIC 0X586C0C6C
+#define ZDMA_XCL_MAGIC 0X586C0C6C
 
 /*
  * S means "Set" through a ptr,
@@ -46,21 +46,21 @@
  * _IOC_SIZE(nr)	    returns size
  */
 
-enum XDMA_IOC_TYPES {
-	XDMA_IOC_NOP,
-	XDMA_IOC_INFO,
-	XDMA_IOC_OFFLINE,
-	XDMA_IOC_ONLINE,
-	XDMA_IOC_MAX
+enum ZDMA_IOC_TYPES {
+	ZDMA_IOC_NOP,
+	ZDMA_IOC_INFO,
+	ZDMA_IOC_OFFLINE,
+	ZDMA_IOC_ONLINE,
+	ZDMA_IOC_MAX
 };
 
-struct xdma_ioc_base {
+struct zdma_ioc_base {
 	unsigned int magic;
 	unsigned int command;
 };
 
-struct xdma_ioc_info {
-	struct xdma_ioc_base	base;
+struct zdma_ioc_info {
+	struct zdma_ioc_base	base;
 	unsigned short		vendor;
 	unsigned short		device;
 	unsigned short		subsystem_vendor;
@@ -75,13 +75,14 @@ struct xdma_ioc_info {
 };
 
 /* IOCTL codes */
-#define XDMA_IOCINFO		_IOWR(XDMA_IOC_MAGIC, XDMA_IOC_INFO, \
-					struct xdma_ioc_info)
-#define XDMA_IOCOFFLINE		_IO(XDMA_IOC_MAGIC, XDMA_IOC_OFFLINE)
-#define XDMA_IOCONLINE		_IO(XDMA_IOC_MAGIC, XDMA_IOC_ONLINE)
+#define ZDMA_IOCINFO		_IOWR(ZDMA_IOC_MAGIC, ZDMA_IOC_INFO, \
+					struct zdma_ioc_info)
+#define ZDMA_IOCOFFLINE		_IO(ZDMA_IOC_MAGIC, ZDMA_IOC_OFFLINE)
+#define ZDMA_IOCONLINE		_IO(ZDMA_IOC_MAGIC, ZDMA_IOC_ONLINE)
 
-#define IOCTL_XDMA_ADDRMODE_SET	_IOW('q', 4, int)
-#define IOCTL_XDMA_ADDRMODE_GET	_IOR('q', 5, int)
-#define IOCTL_XDMA_ALIGN_GET	_IOR('q', 6, int)
+#define IOCTL_ZDMA_ADDRMODE_SET	_IOW('q', 4, int)
+#define IOCTL_ZDMA_ADDRMODE_GET	_IOR('q', 5, int)
+#define IOCTL_ZDMA_ALIGN_GET	_IOR('q', 6, int)
 
-#endif /* _XDMA_IOCALLS_POSIX_H_ */
+#endif /* _ZDMA_IOCALLS_POSIX_H_ */
+

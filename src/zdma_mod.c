@@ -24,14 +24,14 @@
 #include <linux/errno.h>
 #include <linux/aer.h>
 /* include early, to verify it depends only on the headers above */
-#include "libxdma_api.h"
-#include "libxdma.h"
-#include "xdma_mod.h"
-#include "xdma_cdev.h"
+#include "libzdma_api.h"
+#include "libzdma.h"
+#include "zdma_mod.h"
+#include "zdma_cdev.h"
 #include "version.h"
 
-#define DRV_MODULE_NAME		"xdma"
-#define DRV_MODULE_DESC		"Zendar's Modified Xilinx XDMA Reference Driver"
+#define DRV_MODULE_NAME		"zdma"
+#define DRV_MODULE_DESC		"Zendar's Modified Xilinx ZDMA Reference Driver"
 #define DRV_MODULE_RELDATE	"Feb. 2020"
 
 static char version[] =
@@ -43,7 +43,7 @@ MODULE_VERSION(DRV_MODULE_VERSION);
 MODULE_LICENSE("Dual BSD/GPL");
 
 /* SECTION: Module global variables */
-static int xpdev_cnt;
+static int zpdev_cnt;
 
 static const struct pci_device_id pci_ids[] = {
 	{ PCI_DEVICE(0x10ee, 0x903f), },
@@ -109,226 +109,226 @@ static const struct pci_device_id pci_ids[] = {
 };
 MODULE_DEVICE_TABLE(pci, pci_ids);
 
-static void xpdev_free(struct xdma_pci_dev *xpdev)
+static void zpdev_free(struct zdma_pci_dev *zpdev)
 {
-	struct xdma_dev *xdev = xpdev->xdev;
+	struct zdma_dev *zdev = zpdev->zdev;
 
-	pr_info("xpdev 0x%p, destroy_interfaces, xdev 0x%p.\n", xpdev, xdev);
-	xpdev_destroy_interfaces(xpdev);
-	xpdev->xdev = NULL;
-	pr_info("xpdev 0x%p, xdev 0x%p xdma_device_close.\n", xpdev, xdev);
-	xdma_device_close(xpdev->pdev, xdev);
-	xpdev_cnt--;
+	pr_info("zpdev 0x%p, destroy_interfaces, zdev 0x%p.\n", zpdev, zdev);
+	zpdev_destroy_interfaces(zpdev);
+	zpdev->zdev = NULL;
+	pr_info("zpdev 0x%p, zdev 0x%p zdma_device_close.\n", zpdev, zdev);
+	zdma_device_close(zpdev->pdev, zdev);
+	zpdev_cnt--;
 
-	kfree(xpdev);
+	kfree(zpdev);
 }
 
-static struct xdma_pci_dev *xpdev_alloc(struct pci_dev *pdev)
+static struct zdma_pci_dev *zpdev_alloc(struct pci_dev *pdev)
 {
-	struct xdma_pci_dev *xpdev = kmalloc(sizeof(*xpdev), GFP_KERNEL);
+	struct zdma_pci_dev *zpdev = kmalloc(sizeof(*zpdev), GFP_KERNEL);
 
-	if (!xpdev)
+	if (!zpdev)
 		return NULL;
-	memset(xpdev, 0, sizeof(*xpdev));
+	memset(zpdev, 0, sizeof(*zpdev));
 
-	xpdev->magic = MAGIC_DEVICE;
-	xpdev->pdev = pdev;
-	xpdev->user_max = MAX_USER_IRQ;
-	xpdev->h2c_channel_max = XDMA_CHANNEL_NUM_MAX;
-	xpdev->c2h_channel_max = XDMA_CHANNEL_NUM_MAX;
+	zpdev->magic = MAGIC_DEVICE;
+	zpdev->pdev = pdev;
+	zpdev->user_max = MAX_USER_IRQ;
+	zpdev->h2c_channel_max = ZDMA_CHANNEL_NUM_MAX;
+	zpdev->c2h_channel_max = ZDMA_CHANNEL_NUM_MAX;
 
-	xpdev_cnt++;
-	return xpdev;
+	zpdev_cnt++;
+	return zpdev;
 }
 
 static int probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	int rv = 0;
-	struct xdma_pci_dev *xpdev = NULL;
-	struct xdma_dev *xdev;
+	struct zdma_pci_dev *zpdev = NULL;
+	struct zdma_dev *zdev;
 	void *hndl;
 
-	xpdev = xpdev_alloc(pdev);
-	if (!xpdev)
+	zpdev = zpdev_alloc(pdev);
+	if (!zpdev)
 		return -ENOMEM;
 
-	hndl = xdma_device_open(DRV_MODULE_NAME, pdev, &xpdev->user_max,
-			&xpdev->h2c_channel_max, &xpdev->c2h_channel_max);
+	hndl = zdma_device_open(DRV_MODULE_NAME, pdev, &zpdev->user_max,
+			&zpdev->h2c_channel_max, &zpdev->c2h_channel_max);
 	if (!hndl) {
 		rv = -EINVAL;
 		goto err_out;
 	}
 
-	if (xpdev->user_max > MAX_USER_IRQ) {
+	if (zpdev->user_max > MAX_USER_IRQ) {
 		pr_err("Maximum users limit reached\n");
 		rv = -EINVAL;
 		goto err_out;
 	}
 
-	if (xpdev->h2c_channel_max > XDMA_CHANNEL_NUM_MAX) {
+	if (zpdev->h2c_channel_max > ZDMA_CHANNEL_NUM_MAX) {
 		pr_err("Maximun H2C channel limit reached\n");
 		rv = -EINVAL;
 		goto err_out;
 	}
 
-	if (xpdev->c2h_channel_max > XDMA_CHANNEL_NUM_MAX) {
+	if (zpdev->c2h_channel_max > ZDMA_CHANNEL_NUM_MAX) {
 		pr_err("Maximun C2H channel limit reached\n");
 		rv = -EINVAL;
 		goto err_out;
 	}
 
-	if (!xpdev->h2c_channel_max && !xpdev->c2h_channel_max)
+	if (!zpdev->h2c_channel_max && !zpdev->c2h_channel_max)
 		pr_warn("NO engine found!\n");
 
-	if (xpdev->user_max) {
-		u32 mask = (1 << (xpdev->user_max + 1)) - 1;
+	if (zpdev->user_max) {
+		u32 mask = (1 << (zpdev->user_max + 1)) - 1;
 
-		rv = xdma_user_isr_enable(hndl, mask);
+		rv = zdma_user_isr_enable(hndl, mask);
 		if (rv)
 			goto err_out;
 	}
 
 	/* make sure no duplicate */
-	xdev = xdev_find_by_pdev(pdev);
-	if (!xdev) {
-		pr_warn("NO xdev found!\n");
+	zdev = zdev_find_by_pdev(pdev);
+	if (!zdev) {
+		pr_warn("NO zdev found!\n");
 		rv =  -EINVAL;
 		goto err_out;
 	}
 
-	if (hndl != xdev) {
-		pr_err("xdev handle mismatch\n");
+	if (hndl != zdev) {
+		pr_err("zdev handle mismatch\n");
 		rv =  -EINVAL;
 		goto err_out;
 	}
 
-	pr_info("%s xdma%d, pdev 0x%p, xdev 0x%p, 0x%p, usr %d, ch %d,%d.\n",
-		dev_name(&pdev->dev), xdev->idx, pdev, xpdev, xdev,
-		xpdev->user_max, xpdev->h2c_channel_max,
-		xpdev->c2h_channel_max);
+	pr_info("%s zdma%d, pdev 0x%p, zdev 0x%p, 0x%p, usr %d, ch %d,%d.\n",
+		dev_name(&pdev->dev), zdev->idx, pdev, zpdev, zdev,
+		zpdev->user_max, zpdev->h2c_channel_max,
+		zpdev->c2h_channel_max);
 
-	xpdev->xdev = hndl;
+	zpdev->zdev = hndl;
 
-	rv = xpdev_create_interfaces(xpdev);
+	rv = zpdev_create_interfaces(zpdev);
 	if (rv)
 		goto err_out;
 
-	dev_set_drvdata(&pdev->dev, xpdev);
+	dev_set_drvdata(&pdev->dev, zpdev);
 
 	return 0;
 
 err_out:
 	pr_err("pdev 0x%p, err %d.\n", pdev, rv);
-	xpdev_free(xpdev);
+	zpdev_free(zpdev);
 	return rv;
 }
 
 static void remove_one(struct pci_dev *pdev)
 {
-	struct xdma_pci_dev *xpdev;
+	struct zdma_pci_dev *zpdev;
 
 	if (!pdev)
 		return;
 
-	xpdev = dev_get_drvdata(&pdev->dev);
-	if (!xpdev)
+	zpdev = dev_get_drvdata(&pdev->dev);
+	if (!zpdev)
 		return;
 
-	pr_info("pdev 0x%p, xdev 0x%p, 0x%p.\n",
-		pdev, xpdev, xpdev->xdev);
-	xpdev_free(xpdev);
+	pr_info("pdev 0x%p, zdev 0x%p, 0x%p.\n",
+		pdev, zpdev, zpdev->zdev);
+	zpdev_free(zpdev);
 
 	dev_set_drvdata(&pdev->dev, NULL);
 }
 
-static pci_ers_result_t xdma_error_detected(struct pci_dev *pdev,
+static pci_ers_result_t zdma_error_detected(struct pci_dev *pdev,
 					pci_channel_state_t state)
 {
-	struct xdma_pci_dev *xpdev = dev_get_drvdata(&pdev->dev);
+	struct zdma_pci_dev *zpdev = dev_get_drvdata(&pdev->dev);
 
 	switch (state) {
 	case pci_channel_io_normal:
 		return PCI_ERS_RESULT_CAN_RECOVER;
 	case pci_channel_io_frozen:
 		pr_warn("dev 0x%p,0x%p, frozen state error, reset controller\n",
-			pdev, xpdev);
-		xdma_device_offline(pdev, xpdev->xdev);
+			pdev, zpdev);
+		zdma_device_offline(pdev, zpdev->zdev);
 		pci_disable_device(pdev);
 		return PCI_ERS_RESULT_NEED_RESET;
 	case pci_channel_io_perm_failure:
 		pr_warn("dev 0x%p,0x%p, failure state error, req. disconnect\n",
-			pdev, xpdev);
+			pdev, zpdev);
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 	return PCI_ERS_RESULT_NEED_RESET;
 }
 
-static pci_ers_result_t xdma_slot_reset(struct pci_dev *pdev)
+static pci_ers_result_t zdma_slot_reset(struct pci_dev *pdev)
 {
-	struct xdma_pci_dev *xpdev = dev_get_drvdata(&pdev->dev);
+	struct zdma_pci_dev *zpdev = dev_get_drvdata(&pdev->dev);
 
-	pr_info("0x%p restart after slot reset\n", xpdev);
+	pr_info("0x%p restart after slot reset\n", zpdev);
 	if (pci_enable_device_mem(pdev)) {
-		pr_info("0x%p failed to renable after slot reset\n", xpdev);
+		pr_info("0x%p failed to renable after slot reset\n", zpdev);
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 
 	pci_set_master(pdev);
 	pci_restore_state(pdev);
 	pci_save_state(pdev);
-	xdma_device_online(pdev, xpdev->xdev);
+	zdma_device_online(pdev, zpdev->zdev);
 
 	return PCI_ERS_RESULT_RECOVERED;
 }
 
-static void xdma_error_resume(struct pci_dev *pdev)
+static void zdma_error_resume(struct pci_dev *pdev)
 {
-	struct xdma_pci_dev *xpdev = dev_get_drvdata(&pdev->dev);
+	struct zdma_pci_dev *zpdev = dev_get_drvdata(&pdev->dev);
 
-	pr_info("dev 0x%p,0x%p.\n", pdev, xpdev);
+	pr_info("dev 0x%p,0x%p.\n", pdev, zpdev);
 	pci_cleanup_aer_uncorrect_error_status(pdev);
 }
 
 #if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
-static void xdma_reset_prepare(struct pci_dev *pdev)
+static void zdma_reset_prepare(struct pci_dev *pdev)
 {
-	struct xdma_pci_dev *xpdev = dev_get_drvdata(&pdev->dev);
+	struct zdma_pci_dev *zpdev = dev_get_drvdata(&pdev->dev);
 
-	pr_info("dev 0x%p,0x%p.\n", pdev, xpdev);
-	xdma_device_offline(pdev, xpdev->xdev);
+	pr_info("dev 0x%p,0x%p.\n", pdev, zpdev);
+	zdma_device_offline(pdev, zpdev->zdev);
 }
 
-static void xdma_reset_done(struct pci_dev *pdev)
+static void zdma_reset_done(struct pci_dev *pdev)
 {
-	struct xdma_pci_dev *xpdev = dev_get_drvdata(&pdev->dev);
+	struct zdma_pci_dev *zpdev = dev_get_drvdata(&pdev->dev);
 
-	pr_info("dev 0x%p,0x%p.\n", pdev, xpdev);
-	xdma_device_online(pdev, xpdev->xdev);
+	pr_info("dev 0x%p,0x%p.\n", pdev, zpdev);
+	zdma_device_online(pdev, zpdev->zdev);
 }
 
 #elif KERNEL_VERSION(3, 16, 0) <= LINUX_VERSION_CODE
-static void xdma_reset_notify(struct pci_dev *pdev, bool prepare)
+static void zdma_reset_notify(struct pci_dev *pdev, bool prepare)
 {
-	struct xdma_pci_dev *xpdev = dev_get_drvdata(&pdev->dev);
+	struct zdma_pci_dev *zpdev = dev_get_drvdata(&pdev->dev);
 
-	pr_info("dev 0x%p,0x%p, prepare %d.\n", pdev, xpdev, prepare);
+	pr_info("dev 0x%p,0x%p, prepare %d.\n", pdev, zpdev, prepare);
 
 	if (prepare)
-		xdma_device_offline(pdev, xpdev->xdev);
+		zdma_device_offline(pdev, zpdev->zdev);
 	else
-		xdma_device_online(pdev, xpdev->xdev);
+		zdma_device_online(pdev, zpdev->zdev);
 }
 #endif
 
-static const struct pci_error_handlers xdma_err_handler = {
-	.error_detected	= xdma_error_detected,
-	.slot_reset	= xdma_slot_reset,
-	.resume		= xdma_error_resume,
+static const struct pci_error_handlers zdma_err_handler = {
+	.error_detected	= zdma_error_detected,
+	.slot_reset	= zdma_slot_reset,
+	.resume		= zdma_error_resume,
 #if KERNEL_VERSION(4, 13, 0) <= LINUX_VERSION_CODE
-	.reset_prepare	= xdma_reset_prepare,
-	.reset_done	= xdma_reset_done,
+	.reset_prepare	= zdma_reset_prepare,
+	.reset_done	= zdma_reset_done,
 #elif KERNEL_VERSION(3, 16, 0) <= LINUX_VERSION_CODE
-	.reset_notify	= xdma_reset_notify,
+	.reset_notify	= zdma_reset_notify,
 #endif
 };
 
@@ -337,34 +337,34 @@ static struct pci_driver pci_driver = {
 	.id_table = pci_ids,
 	.probe = probe_one,
 	.remove = remove_one,
-	.err_handler = &xdma_err_handler,
+	.err_handler = &zdma_err_handler,
 };
 
-static int __init xdma_mod_init(void)
+static int __init zdma_mod_init(void)
 {
 	int rv;
 
 	pr_info("%s", version);
 
-	if (desc_blen_max > XDMA_DESC_BLEN_MAX)
-		desc_blen_max = XDMA_DESC_BLEN_MAX;
+	if (desc_blen_max > ZDMA_DESC_BLEN_MAX)
+		desc_blen_max = ZDMA_DESC_BLEN_MAX;
 	pr_info("desc_blen_max: 0x%x/%u, sgdma_timeout: %u sec.\n",
 		desc_blen_max, desc_blen_max, sgdma_timeout);
 
-	rv = xdma_cdev_init();
+	rv = zdma_cdev_init();
 	if (rv < 0)
 		return rv;
 
 	return pci_register_driver(&pci_driver);
 }
 
-static void __exit xdma_mod_exit(void)
+static void __exit zdma_mod_exit(void)
 {
 	/* unregister this driver from the PCI bus driver */
 	dbg_init("pci_unregister_driver.\n");
 	pci_unregister_driver(&pci_driver);
-	xdma_cdev_cleanup();
+	zdma_cdev_cleanup();
 }
 
-module_init(xdma_mod_init);
-module_exit(xdma_mod_exit);
+module_init(zdma_mod_init);
+module_exit(zdma_mod_exit);

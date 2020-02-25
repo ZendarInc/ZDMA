@@ -19,7 +19,7 @@
 
 #define pr_fmt(fmt)     KBUILD_MODNAME ":%s: " fmt, __func__
 
-#include "xdma_cdev.h"
+#include "zdma_cdev.h"
 
 /*
  * character device file operations for events
@@ -28,17 +28,17 @@ static ssize_t char_events_read(struct file *file, char __user *buf,
 		size_t count, loff_t *pos)
 {
 	int rv;
-	struct xdma_user_irq *user_irq;
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
+	struct zdma_user_irq *user_irq;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
 	u32 events_user;
 	unsigned long flags;
 
-	rv = xcdev_check(__func__, xcdev, 0);
+	rv = zcdev_check(__func__, zcdev, 0);
 	if (rv < 0)
 		return rv;
-	user_irq = xcdev->user_irq;
+	user_irq = zcdev->user_irq;
 	if (!user_irq) {
-		pr_info("xcdev 0x%p, user_irq NULL.\n", xcdev);
+		pr_info("zcdev 0x%p, user_irq NULL.\n", zcdev);
 		return -EINVAL;
 	}
 
@@ -76,18 +76,18 @@ static ssize_t char_events_read(struct file *file, char __user *buf,
 
 static unsigned int char_events_poll(struct file *file, poll_table *wait)
 {
-	struct xdma_user_irq *user_irq;
-	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
+	struct zdma_user_irq *user_irq;
+	struct zdma_cdev *zcdev = (struct zdma_cdev *)file->private_data;
 	unsigned long flags;
 	unsigned int mask = 0;
 	int rv;
 
-	rv = xcdev_check(__func__, xcdev, 0);
+	rv = zcdev_check(__func__, zcdev, 0);
 	if (rv < 0)
 		return rv;
-	user_irq = xcdev->user_irq;
+	user_irq = zcdev->user_irq;
 	if (!user_irq) {
-		pr_info("xcdev 0x%p, user_irq NULL.\n", xcdev);
+		pr_info("zcdev 0x%p, user_irq NULL.\n", zcdev);
 		return -EINVAL;
 	}
 
@@ -113,8 +113,8 @@ static const struct file_operations events_fops = {
 	.poll = char_events_poll,
 };
 
-void cdev_event_init(struct xdma_cdev *xcdev)
+void cdev_event_init(struct zdma_cdev *zcdev)
 {
-	xcdev->user_irq = &(xcdev->xdev->user_irq[xcdev->bar]);
-	cdev_init(&xcdev->cdev, &events_fops);
+	zcdev->user_irq = &(zcdev->zdev->user_irq[zcdev->bar]);
+	cdev_init(&zcdev->cdev, &events_fops);
 }
