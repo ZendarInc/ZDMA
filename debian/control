@@ -1,7 +1,8 @@
 Source: zdma-dkms
 Maintainer: Vincent Bernat <bernat@debian.org>
 Build-Depends: debhelper (>= 9), dkms
-
+Section: devel
+Priority: optional
 Package: zdma-dkms
 Architecture: all
 Depends: ${misc:Depends}
