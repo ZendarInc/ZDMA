@@ -13,6 +13,7 @@ EOF
 cat debian/changelog
 
 mkdir build
+cd build
 cp -r src build/
 cp -r debian build/
 
