@@ -699,6 +699,11 @@ engine_service_transfer_list(struct zdma_engine *engine,
 					 struct zdma_transfer *transfer,
 					 u32 *pdesc_completed)
 {
+  /* <DEBUG> */
+  unsigned transfer_count = 0;
+  struct list_head* head;
+  /* </DEBUG> */
+
 	if (!engine) {
 		pr_err("dma engine NULL\n");
 		return NULL;
@@ -714,6 +719,13 @@ engine_service_transfer_list(struct zdma_engine *engine,
 			*pdesc_completed);
 		return NULL;
 	}
+
+  /* <DEBUG> */
+  list_for_each(head, &engine->transfer_list) {
+    ++transfer_count;
+  }
+  printk(KERN_INFO "xfer count: %d\n", transfer_count);
+  /* </DEBUG> */
 
 	/*
 	 * iterate over all the transfers completed by the engine,
@@ -897,21 +909,16 @@ static int engine_service_resume(struct zdma_engine *engine)
  * @engine pointer to struct zdma_engine
  *
  */
-static int engine_service(struct zdma_engine *engine, int desc_writeback)
+static int engine_service(struct zdma_engine *engine)
 {
 	struct zdma_transfer *transfer = NULL;
-	u32 desc_count = desc_writeback & WB_COUNT_MASK;
-	u32 err_flag = desc_writeback & WB_ERR_MASK;
+	u32 desc_count = 0;
 	int rv = 0;
 
 	if (!engine) {
 		pr_err("dma engine NULL\n");
 		return -EINVAL;
 	}
-
-	/* If polling detected an error, signal to the caller */
-	if (err_flag)
-		rv = -1;
 
 	/* Service the engine */
 	if (!engine->running) {
@@ -922,19 +929,6 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 			return rv;
 		}
 		return 0;
-	}
-
-	/*
-	 * If called by the ISR or polling detected an error, read and clear
-	 * engine status. For polled mode descriptor completion, this read is
-	 * unnecessary and is skipped to reduce latency
-	 */
-	if (desc_count == 0 || err_flag != 0) {
-		rv = engine_status_read(engine, 1, 0);
-		if (rv < 0) {
-			pr_err("Failed to read engine status\n");
-			return rv;
-		}
 	}
 
 	/*
@@ -950,14 +944,14 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 			return rv;
 		}
 	}
+
 	/*
 	 * If called from the ISR, or if an error occurred, the descriptor
 	 * count will be zero.	In this scenario, read the descriptor count
 	 * from HW.	In polled mode descriptor completion, this read is
 	 * unnecessary and is skipped to reduce latency
 	 */
-	if (!desc_count)
-		desc_count = read_register(&engine->regs->completed_desc_count);
+  desc_count = read_register(&engine->regs->completed_desc_count);
 	dbg_tfr("desc_count = %d\n", desc_count);
 
 	/* transfers on queue? */
@@ -1012,7 +1006,7 @@ static void engine_service_work(struct work_struct *work)
 	spin_lock_irqsave(&engine->lock, flags);
 
 	dbg_tfr("engine_service() for %s engine %p\n", engine->name, engine);
-	rv = engine_service(engine, 0);
+	rv = engine_service(engine);
 	if (rv < 0) {
 		pr_err("Failed to service engine\n");
 		goto unlock;
