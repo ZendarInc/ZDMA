@@ -699,11 +699,6 @@ engine_service_transfer_list(struct zdma_engine *engine,
 					 struct zdma_transfer *transfer,
 					 u32 *pdesc_completed)
 {
-	/* <DEBUG> */
-	unsigned transfer_count = 0;
-	struct list_head* head;
-	/* </DEBUG> */
-
 	if (!engine) {
 		pr_err("dma engine NULL\n");
 		return NULL;
@@ -719,13 +714,6 @@ engine_service_transfer_list(struct zdma_engine *engine,
 			*pdesc_completed);
 		return NULL;
 	}
-
-	/* <DEBUG> */
-	list_for_each(head, &engine->transfer_list) {
-		++transfer_count;
-	}
-	printk(KERN_INFO "xfer count: %d\n", transfer_count);
-	/* </DEBUG> */
 
 	/*
 	 * iterate over all the transfers completed by the engine,
@@ -929,6 +917,17 @@ static int engine_service(struct zdma_engine *engine)
 			return rv;
 		}
 		return 0;
+	}
+
+	/*
+	 * If called by the ISR or polling detected an error, read and clear
+	 * engine status. For polled mode descriptor completion, this read is
+	 * unnecessary and is skipped to reduce latency
+	 */
+	rv = engine_status_read(engine, 1, 0);
+	if (rv < 0) {
+		pr_err("Failed to read engine status\n");
+		return rv;
 	}
 
 	/*
