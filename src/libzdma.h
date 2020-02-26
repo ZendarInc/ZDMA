@@ -38,25 +38,25 @@
 //#define ZDMA_CONFIG_BAR_NUM	1
 
 /* SECTION: Preprocessor macros/constants */
-#define ZDMA_BAR_NUM (6)
+#define ZDMA_BAR_NUM 6
 
 /* maximum amount of register space to map */
-#define ZDMA_BAR_SIZE (0x8000UL)
+#define ZDMA_BAR_SIZE 0x8000UL
 
-#define ZDMA_CHANNEL_NUM_MAX (4)
+#define ZDMA_CHANNEL_NUM_MAX 4
 /*
  * interrupts per engine, rad2_vul.sv:237
  * .REG_IRQ_OUT	(reg_irq_from_ch[(channel*2) +: 2]),
  */
-#define ZDMA_ENG_IRQ_NUM (1)
-#define MAX_EXTRA_ADJ (63)
+#define ZDMA_ENG_IRQ_NUM 1
+#define MAX_EXTRA_ADJ 63
 
 /* Target internal components on ZDMA control BAR */
-#define ZDMA_OFS_INT_CTRL	(0x2000UL)
-#define ZDMA_OFS_CONFIG		(0x3000UL)
+#define ZDMA_OFS_INT_CTRL	0x2000UL
+#define ZDMA_OFS_CONFIG		0x3000UL
 
 /* maximum number of desc per transfer request */
-#define ZDMA_TRANSFER_MAX_DESC (512)
+#define ZDMA_TRANSFER_MAX_DESC 512
 
 /* maximum size of a single DMA transfer descriptor */
 #define ZDMA_DESC_BLEN_BITS	28
@@ -169,7 +169,7 @@
 
 #define MAX_USER_IRQ 16
 
-#define MAX_DESC_BUS_ADDR (0xffffffffULL)
+#define MAX_DESC_BUS_ADDR 0xffffffffULL
 
 #define DESC_MAGIC 0xAD4B0000UL
 
@@ -469,7 +469,6 @@ struct zdma_engine {
 	/* Members associated with interrupt mode support */
 	wait_queue_head_t shutdown_wq;	/* wait queue for shutdown sync */
 	spinlock_t lock;		/* protects concurrent access */
-	int prev_cpu;			/* remember CPU# of (last) locker */
 	int msix_irq_line;		/* MSI-X vector for this engine */
 	u32 irq_bitmask;		/* IRQ bit mask for this engine */
 	struct work_struct work;	/* Work queue for interrupt handling */

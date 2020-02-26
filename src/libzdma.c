@@ -929,7 +929,7 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 	 * engine status. For polled mode descriptor completion, this read is
 	 * unnecessary and is skipped to reduce latency
 	 */
-	if ((desc_count == 0) || (err_flag != 0)) {
+	if (desc_count == 0 || err_flag != 0) {
 		rv = engine_status_read(engine, 1, 0);
 		if (rv < 0) {
 			pr_err("Failed to read engine status\n");
@@ -942,7 +942,8 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 	 * shut down
 	 */
 	if ((engine->running && !(engine->status & ZDMA_STAT_BUSY)) ||
-			(desc_count != 0)) {
+			desc_count != 0)
+	{
 		rv = engine_service_shutdown(engine);
 		if (rv < 0) {
 			pr_err("Failed to shutdown engine\n");
@@ -2174,9 +2175,6 @@ static int transfer_queue(struct zdma_engine *engine,
 
 	/* lock the engine state */
 	spin_lock_irqsave(&engine->lock, flags);
-
-	engine->prev_cpu = get_cpu();
-	put_cpu();
 
 	/* engine is being shutdown; do not accept new transfers */
 	if (engine->shutdown & ENGINE_SHUTDOWN_REQUEST) {
