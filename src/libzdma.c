@@ -699,10 +699,10 @@ engine_service_transfer_list(struct zdma_engine *engine,
 					 struct zdma_transfer *transfer,
 					 u32 *pdesc_completed)
 {
-  /* <DEBUG> */
-  unsigned transfer_count = 0;
-  struct list_head* head;
-  /* </DEBUG> */
+	/* <DEBUG> */
+	unsigned transfer_count = 0;
+	struct list_head* head;
+	/* </DEBUG> */
 
 	if (!engine) {
 		pr_err("dma engine NULL\n");
@@ -720,12 +720,12 @@ engine_service_transfer_list(struct zdma_engine *engine,
 		return NULL;
 	}
 
-  /* <DEBUG> */
-  list_for_each(head, &engine->transfer_list) {
-    ++transfer_count;
-  }
-  printk(KERN_INFO "xfer count: %d\n", transfer_count);
-  /* </DEBUG> */
+	/* <DEBUG> */
+	list_for_each(head, &engine->transfer_list) {
+		++transfer_count;
+	}
+	printk(KERN_INFO "xfer count: %d\n", transfer_count);
+	/* </DEBUG> */
 
 	/*
 	 * iterate over all the transfers completed by the engine,
@@ -951,7 +951,7 @@ static int engine_service(struct zdma_engine *engine)
 	 * from HW.	In polled mode descriptor completion, this read is
 	 * unnecessary and is skipped to reduce latency
 	 */
-  desc_count = read_register(&engine->regs->completed_desc_count);
+	desc_count = read_register(&engine->regs->completed_desc_count);
 	dbg_tfr("desc_count = %d\n", desc_count);
 
 	/* transfers on queue? */
