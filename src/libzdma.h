@@ -227,13 +227,6 @@ enum shutdown_state {
 	ENGINE_SHUTDOWN_IDLE = 2	/* engine has shutdown and is idle */
 };
 
-enum dev_capabilities {
-	CAP_64BIT_DMA = 2,
-	CAP_64BIT_DESC = 4,
-	CAP_ENGINE_WRITE = 8,
-	CAP_ENGINE_READ = 16
-};
-
 /* SECTION: Structure definitions */
 
 struct zdma_io_cb {
@@ -535,10 +528,6 @@ struct zdma_dev {
 	u32 mask_irq_c2h;
 	struct zdma_engine engine_h2c[ZDMA_CHANNEL_NUM_MAX];
 	struct zdma_engine engine_c2h[ZDMA_CHANNEL_NUM_MAX];
-
-	/* SD_Accel specific */
-	enum dev_capabilities capabilities;
-	u64 feature_id;
 };
 
 static inline int zdma_device_flag_check(struct zdma_dev *zdev, unsigned int f)
