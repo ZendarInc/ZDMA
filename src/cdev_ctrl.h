@@ -67,7 +67,6 @@ struct zdma_ioc_info {
 	unsigned short		subsystem_device;
 	unsigned int		dma_engine_version;
 	unsigned int		driver_version;
-	unsigned long long	feature_id;
 	unsigned short		domain;
 	unsigned char		bus;
 	unsigned char		dev;

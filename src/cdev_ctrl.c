@@ -111,7 +111,6 @@ static long version_ioctl(struct zdma_cdev *zcdev, void __user *arg)
 	obj.device = zdev->pdev->device;
 	obj.subsystem_vendor = zdev->pdev->subsystem_vendor;
 	obj.subsystem_device = zdev->pdev->subsystem_device;
-	obj.feature_id = zdev->feature_id;
 	obj.driver_version = DRV_MOD_VERSION_NUMBER;
 	obj.domain = 0;
 	obj.bus = PCI_BUS_NUM(zdev->pdev->devfn);

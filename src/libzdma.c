@@ -897,21 +897,16 @@ static int engine_service_resume(struct zdma_engine *engine)
  * @engine pointer to struct zdma_engine
  *
  */
-static int engine_service(struct zdma_engine *engine, int desc_writeback)
+static int engine_service(struct zdma_engine *engine)
 {
 	struct zdma_transfer *transfer = NULL;
-	u32 desc_count = desc_writeback & WB_COUNT_MASK;
-	u32 err_flag = desc_writeback & WB_ERR_MASK;
+	u32 desc_count = 0;
 	int rv = 0;
 
 	if (!engine) {
 		pr_err("dma engine NULL\n");
 		return -EINVAL;
 	}
-
-	/* If polling detected an error, signal to the caller */
-	if (err_flag)
-		rv = -1;
 
 	/* Service the engine */
 	if (!engine->running) {
@@ -929,12 +924,10 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 	 * engine status. For polled mode descriptor completion, this read is
 	 * unnecessary and is skipped to reduce latency
 	 */
-	if ((desc_count == 0) || (err_flag != 0)) {
-		rv = engine_status_read(engine, 1, 0);
-		if (rv < 0) {
-			pr_err("Failed to read engine status\n");
-			return rv;
-		}
+	rv = engine_status_read(engine, 1, 0);
+	if (rv < 0) {
+		pr_err("Failed to read engine status\n");
+		return rv;
 	}
 
 	/*
@@ -942,21 +935,22 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 	 * shut down
 	 */
 	if ((engine->running && !(engine->status & ZDMA_STAT_BUSY)) ||
-			(desc_count != 0)) {
+			desc_count != 0)
+	{
 		rv = engine_service_shutdown(engine);
 		if (rv < 0) {
 			pr_err("Failed to shutdown engine\n");
 			return rv;
 		}
 	}
+
 	/*
 	 * If called from the ISR, or if an error occurred, the descriptor
 	 * count will be zero.	In this scenario, read the descriptor count
 	 * from HW.	In polled mode descriptor completion, this read is
 	 * unnecessary and is skipped to reduce latency
 	 */
-	if (!desc_count)
-		desc_count = read_register(&engine->regs->completed_desc_count);
+	desc_count = read_register(&engine->regs->completed_desc_count);
 	dbg_tfr("desc_count = %d\n", desc_count);
 
 	/* transfers on queue? */
@@ -1011,7 +1005,7 @@ static void engine_service_work(struct work_struct *work)
 	spin_lock_irqsave(&engine->lock, flags);
 
 	dbg_tfr("engine_service() for %s engine %p\n", engine->name, engine);
-	rv = engine_service(engine, 0);
+	rv = engine_service(engine);
 	if (rv < 0) {
 		pr_err("Failed to service engine\n");
 		goto unlock;
@@ -2174,9 +2168,6 @@ static int transfer_queue(struct zdma_engine *engine,
 
 	/* lock the engine state */
 	spin_lock_irqsave(&engine->lock, flags);
-
-	engine->prev_cpu = get_cpu();
-	put_cpu();
 
 	/* engine is being shutdown; do not accept new transfers */
 	if (engine->shutdown & ENGINE_SHUTDOWN_REQUEST) {
