@@ -1219,19 +1219,17 @@ static irqreturn_t zdma_channel_irq(int irq, void *dev_id)
 	}
 
 	/* Disable the interrupt for this engine */
+	spin_lock(&engine->lock);
 	write_register(
 		engine->interrupt_enable_mask_value,
 		&engine->regs->interrupt_enable_mask_w1c,
 		(unsigned long)(&engine->regs->interrupt_enable_mask_w1c) -
 			(unsigned long)(&engine->regs));
 	wmb();
+	spin_unlock(&engine->lock);
 	/* Schedule the bottom half */
 	schedule_work(&engine->work);
 
-	/*
-	 * RTO - need to protect access here if multiple MSI-X are used for
-	 * user interrupts
-	 */
 	return IRQ_HANDLED;
 }
 
