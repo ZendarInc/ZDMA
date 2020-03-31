@@ -443,7 +443,6 @@ struct zdma_engine {
 	/* Engine state, configuration and flags */
 	enum shutdown_state shutdown;	/* engine shutdown mode */
 	enum dma_data_direction dir;
-	int device_open;	/* flag if engine node open, ST mode only */
 	int running;		/* flag if the driver started engine */
 	int non_incr_addr;	/* flag if non-incremental addressing used */
 	int addr_align;		/* source/dest alignment in bytes */
@@ -512,7 +511,6 @@ struct zdma_dev {
 	int h2c_channel_max;
 
 	/* Interrupt management */
-	int irq_count;		/* interrupt counter */
 	int irq_line;		/* flag if irq allocated successfully */
 	int msi_enabled;	/* flag if msi was enabled for the device */
 	int msix_enabled;	/* flag if msi-x was enabled for the device */

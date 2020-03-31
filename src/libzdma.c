@@ -328,6 +328,34 @@ static int engine_reg_dump(struct zdma_engine *engine)
 	return 0;
 }
 
+static void interrupt_block_dump(struct zdma_dev* zdev)
+{
+	struct interrupt_regs *irq_regs;
+	u32 r;
+
+	BUG_ON(!zdev);
+
+	irq_regs = (struct interrupt_regs *)(zdev->bar[zdev->config_bar_idx] +
+							 ZDMA_OFS_INT_CTRL);
+	r = read_register(&irq_regs->user_int_enable);
+	pr_info("user_int_enable: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->channel_int_enable);
+	pr_info("channel_int_enable: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->user_int_request);
+	pr_info("user_int_request: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->channel_int_request);
+	pr_info("channel_int_request: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->user_int_pending);
+	pr_info("user_int_pending: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->channel_int_pending);
+	pr_info("channel_int_pending: 0x%08x\n", r);
+}
+
 static void engine_status_dump(struct zdma_engine *engine)
 {
 	u32 v = engine->status;
@@ -947,8 +975,7 @@ static int engine_service(struct zdma_engine *engine)
 	/*
 	 * If called from the ISR, or if an error occurred, the descriptor
 	 * count will be zero.	In this scenario, read the descriptor count
-	 * from HW.	In polled mode descriptor completion, this read is
-	 * unnecessary and is skipped to reduce latency
+	 * from HW.
 	 */
 	desc_count = read_register(&engine->regs->completed_desc_count);
 	dbg_tfr("desc_count = %d\n", desc_count);
@@ -1144,7 +1171,6 @@ static irqreturn_t zdma_isr(int irq, void *dev_id)
 		}
 	}
 
-	zdev->irq_count++;
 	return IRQ_HANDLED;
 }
 
@@ -1177,7 +1203,6 @@ static irqreturn_t zdma_channel_irq(int irq, void *dev_id)
 {
 	struct zdma_dev *zdev;
 	struct zdma_engine *engine;
-	struct interrupt_regs *irq_regs;
 
 	dbg_irq("(irq=%d) <<<< INTERRUPT service ROUTINE\n", irq);
 	if (!dev_id) {
@@ -1187,32 +1212,24 @@ static irqreturn_t zdma_channel_irq(int irq, void *dev_id)
 
 	engine = (struct zdma_engine *)dev_id;
 	zdev = engine->zdev;
-	read_interrupts(zdev);
-
 	if (!zdev) {
 		WARN_ON(!zdev);
 		dbg_irq("%s(irq=%d) zdev=%p ??\n", __func__, irq, zdev);
 		return IRQ_NONE;
 	}
 
-	irq_regs = (struct interrupt_regs *)(zdev->bar[zdev->config_bar_idx] +
-							 ZDMA_OFS_INT_CTRL);
-
 	/* Disable the interrupt for this engine */
+	spin_lock(&engine->lock);
 	write_register(
 		engine->interrupt_enable_mask_value,
 		&engine->regs->interrupt_enable_mask_w1c,
 		(unsigned long)(&engine->regs->interrupt_enable_mask_w1c) -
 			(unsigned long)(&engine->regs));
 	wmb();
+	spin_unlock(&engine->lock);
 	/* Schedule the bottom half */
 	schedule_work(&engine->work);
 
-	/*
-	 * RTO - need to protect access here if multiple MSI-X are used for
-	 * user interrupts
-	 */
-	zdev->irq_count++;
 	return IRQ_HANDLED;
 }
 
@@ -2777,6 +2794,7 @@ ssize_t zdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 			/* transfer can still be in-flight */
 			pr_info("xfer 0x%p,%u, s 0x%x timed out, ep 0x%llx.\n",
 				xfer, xfer->len, xfer->state, req->ep_addr);
+			interrupt_block_dump(engine->zdev);
 			rv = engine_status_read(engine, 0, 1);
 			if (rv < 0) {
 				pr_err("Failed to read engine status\n");
