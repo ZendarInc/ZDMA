@@ -38,6 +38,8 @@ TARGETS :=
 TARGETS += zdma-malloc
 TARGETS += zdma-h2c-perf
 TARGETS += zdma-c2h-perf
+TARGETS += zdma-h2c2h-perf
+TARGETS += zdma-mmap-perf
 TARGETS += cuda-babe
 
 default: $(TARGETS)
