@@ -1,5 +1,5 @@
 Source: zdma-dkms
-Maintainer: Vincent Bernat <bernat@debian.org>
+Maintainer: Zendar <infrastructure@zendar.io>
 Build-Depends: debhelper (>= 9), dkms
 
 Section: devel

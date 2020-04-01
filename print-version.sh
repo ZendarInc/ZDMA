@@ -1,12 +1,12 @@
 #!/bin/bash
 
-timestamp=$(date --utc "+%y%m%d%H%M")
+root=$(dirname ${0})
 
-git_hash=$(git rev-parse --verify HEAD)
-if [ ! -z "$(git status --untracked-files=no --porcelain)" ]
-then
-  git_hash="${git_hash}+"
-fi
+major=$(grep DRV_MOD_MAJOR      ${root}/src/version.h)
+minor=$(grep DRV_MOD_MINOR      ${root}/src/version.h)
+patch=$(grep DRV_MOD_PATCHLEVEL ${root}/src/version.h)
 
-echo -n 0.0."${timestamp}~${git_hash}"
-#echo -n 0.0."${timestamp}"
+major=$(echo ${major} | awk '{print $3}')
+minor=$(echo ${minor} | awk '{print $3}')
+patch=$(echo ${patch} | awk '{print $3}')
+echo "${major}.${minor}.${patch}"
