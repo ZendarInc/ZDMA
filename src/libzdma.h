@@ -38,25 +38,25 @@
 //#define ZDMA_CONFIG_BAR_NUM	1
 
 /* SECTION: Preprocessor macros/constants */
-#define ZDMA_BAR_NUM (6)
+#define ZDMA_BAR_NUM 6
 
 /* maximum amount of register space to map */
-#define ZDMA_BAR_SIZE (0x8000UL)
+#define ZDMA_BAR_SIZE 0x8000UL
 
-#define ZDMA_CHANNEL_NUM_MAX (4)
+#define ZDMA_CHANNEL_NUM_MAX 4
 /*
  * interrupts per engine, rad2_vul.sv:237
  * .REG_IRQ_OUT	(reg_irq_from_ch[(channel*2) +: 2]),
  */
-#define ZDMA_ENG_IRQ_NUM (1)
-#define MAX_EXTRA_ADJ (63)
+#define ZDMA_ENG_IRQ_NUM 1
+#define MAX_EXTRA_ADJ 63
 
 /* Target internal components on ZDMA control BAR */
-#define ZDMA_OFS_INT_CTRL	(0x2000UL)
-#define ZDMA_OFS_CONFIG		(0x3000UL)
+#define ZDMA_OFS_INT_CTRL	0x2000UL
+#define ZDMA_OFS_CONFIG		0x3000UL
 
 /* maximum number of desc per transfer request */
-#define ZDMA_TRANSFER_MAX_DESC (512)
+#define ZDMA_TRANSFER_MAX_DESC 512
 
 /* maximum size of a single DMA transfer descriptor */
 #define ZDMA_DESC_BLEN_BITS	28
@@ -169,7 +169,7 @@
 
 #define MAX_USER_IRQ 16
 
-#define MAX_DESC_BUS_ADDR (0xffffffffULL)
+#define MAX_DESC_BUS_ADDR 0xffffffffULL
 
 #define DESC_MAGIC 0xAD4B0000UL
 
@@ -225,13 +225,6 @@ enum shutdown_state {
 	ENGINE_SHUTDOWN_NONE = 0,	/* No shutdown in progress */
 	ENGINE_SHUTDOWN_REQUEST = 1,	/* engine requested to shutdown */
 	ENGINE_SHUTDOWN_IDLE = 2	/* engine has shutdown and is idle */
-};
-
-enum dev_capabilities {
-	CAP_64BIT_DMA = 2,
-	CAP_64BIT_DESC = 4,
-	CAP_ENGINE_WRITE = 8,
-	CAP_ENGINE_READ = 16
 };
 
 /* SECTION: Structure definitions */
@@ -450,7 +443,6 @@ struct zdma_engine {
 	/* Engine state, configuration and flags */
 	enum shutdown_state shutdown;	/* engine shutdown mode */
 	enum dma_data_direction dir;
-	int device_open;	/* flag if engine node open, ST mode only */
 	int running;		/* flag if the driver started engine */
 	int non_incr_addr;	/* flag if non-incremental addressing used */
 	int addr_align;		/* source/dest alignment in bytes */
@@ -469,7 +461,6 @@ struct zdma_engine {
 	/* Members associated with interrupt mode support */
 	wait_queue_head_t shutdown_wq;	/* wait queue for shutdown sync */
 	spinlock_t lock;		/* protects concurrent access */
-	int prev_cpu;			/* remember CPU# of (last) locker */
 	int msix_irq_line;		/* MSI-X vector for this engine */
 	u32 irq_bitmask;		/* IRQ bit mask for this engine */
 	struct work_struct work;	/* Work queue for interrupt handling */
@@ -520,7 +511,6 @@ struct zdma_dev {
 	int h2c_channel_max;
 
 	/* Interrupt management */
-	int irq_count;		/* interrupt counter */
 	int irq_line;		/* flag if irq allocated successfully */
 	int msi_enabled;	/* flag if msi was enabled for the device */
 	int msix_enabled;	/* flag if msi-x was enabled for the device */
@@ -536,10 +526,6 @@ struct zdma_dev {
 	u32 mask_irq_c2h;
 	struct zdma_engine engine_h2c[ZDMA_CHANNEL_NUM_MAX];
 	struct zdma_engine engine_c2h[ZDMA_CHANNEL_NUM_MAX];
-
-	/* SD_Accel specific */
-	enum dev_capabilities capabilities;
-	u64 feature_id;
 };
 
 static inline int zdma_device_flag_check(struct zdma_dev *zdev, unsigned int f)

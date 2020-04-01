@@ -328,6 +328,34 @@ static int engine_reg_dump(struct zdma_engine *engine)
 	return 0;
 }
 
+static void interrupt_block_dump(struct zdma_dev* zdev)
+{
+	struct interrupt_regs *irq_regs;
+	u32 r;
+
+	BUG_ON(!zdev);
+
+	irq_regs = (struct interrupt_regs *)(zdev->bar[zdev->config_bar_idx] +
+							 ZDMA_OFS_INT_CTRL);
+	r = read_register(&irq_regs->user_int_enable);
+	pr_info("user_int_enable: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->channel_int_enable);
+	pr_info("channel_int_enable: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->user_int_request);
+	pr_info("user_int_request: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->channel_int_request);
+	pr_info("channel_int_request: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->user_int_pending);
+	pr_info("user_int_pending: 0x%08x\n", r);
+
+	r = read_register(&irq_regs->channel_int_pending);
+	pr_info("channel_int_pending: 0x%08x\n", r);
+}
+
 static void engine_status_dump(struct zdma_engine *engine)
 {
 	u32 v = engine->status;
@@ -897,21 +925,16 @@ static int engine_service_resume(struct zdma_engine *engine)
  * @engine pointer to struct zdma_engine
  *
  */
-static int engine_service(struct zdma_engine *engine, int desc_writeback)
+static int engine_service(struct zdma_engine *engine)
 {
 	struct zdma_transfer *transfer = NULL;
-	u32 desc_count = desc_writeback & WB_COUNT_MASK;
-	u32 err_flag = desc_writeback & WB_ERR_MASK;
+	u32 desc_count = 0;
 	int rv = 0;
 
 	if (!engine) {
 		pr_err("dma engine NULL\n");
 		return -EINVAL;
 	}
-
-	/* If polling detected an error, signal to the caller */
-	if (err_flag)
-		rv = -1;
 
 	/* Service the engine */
 	if (!engine->running) {
@@ -929,12 +952,10 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 	 * engine status. For polled mode descriptor completion, this read is
 	 * unnecessary and is skipped to reduce latency
 	 */
-	if ((desc_count == 0) || (err_flag != 0)) {
-		rv = engine_status_read(engine, 1, 0);
-		if (rv < 0) {
-			pr_err("Failed to read engine status\n");
-			return rv;
-		}
+	rv = engine_status_read(engine, 1, 0);
+	if (rv < 0) {
+		pr_err("Failed to read engine status\n");
+		return rv;
 	}
 
 	/*
@@ -942,21 +963,21 @@ static int engine_service(struct zdma_engine *engine, int desc_writeback)
 	 * shut down
 	 */
 	if ((engine->running && !(engine->status & ZDMA_STAT_BUSY)) ||
-			(desc_count != 0)) {
+			desc_count != 0)
+	{
 		rv = engine_service_shutdown(engine);
 		if (rv < 0) {
 			pr_err("Failed to shutdown engine\n");
 			return rv;
 		}
 	}
+
 	/*
 	 * If called from the ISR, or if an error occurred, the descriptor
 	 * count will be zero.	In this scenario, read the descriptor count
-	 * from HW.	In polled mode descriptor completion, this read is
-	 * unnecessary and is skipped to reduce latency
+	 * from HW.
 	 */
-	if (!desc_count)
-		desc_count = read_register(&engine->regs->completed_desc_count);
+	desc_count = read_register(&engine->regs->completed_desc_count);
 	dbg_tfr("desc_count = %d\n", desc_count);
 
 	/* transfers on queue? */
@@ -1011,7 +1032,7 @@ static void engine_service_work(struct work_struct *work)
 	spin_lock_irqsave(&engine->lock, flags);
 
 	dbg_tfr("engine_service() for %s engine %p\n", engine->name, engine);
-	rv = engine_service(engine, 0);
+	rv = engine_service(engine);
 	if (rv < 0) {
 		pr_err("Failed to service engine\n");
 		goto unlock;
@@ -1150,7 +1171,6 @@ static irqreturn_t zdma_isr(int irq, void *dev_id)
 		}
 	}
 
-	zdev->irq_count++;
 	return IRQ_HANDLED;
 }
 
@@ -1183,7 +1203,6 @@ static irqreturn_t zdma_channel_irq(int irq, void *dev_id)
 {
 	struct zdma_dev *zdev;
 	struct zdma_engine *engine;
-	struct interrupt_regs *irq_regs;
 
 	dbg_irq("(irq=%d) <<<< INTERRUPT service ROUTINE\n", irq);
 	if (!dev_id) {
@@ -1193,32 +1212,24 @@ static irqreturn_t zdma_channel_irq(int irq, void *dev_id)
 
 	engine = (struct zdma_engine *)dev_id;
 	zdev = engine->zdev;
-	read_interrupts(zdev);
-
 	if (!zdev) {
 		WARN_ON(!zdev);
 		dbg_irq("%s(irq=%d) zdev=%p ??\n", __func__, irq, zdev);
 		return IRQ_NONE;
 	}
 
-	irq_regs = (struct interrupt_regs *)(zdev->bar[zdev->config_bar_idx] +
-							 ZDMA_OFS_INT_CTRL);
-
 	/* Disable the interrupt for this engine */
+	spin_lock(&engine->lock);
 	write_register(
 		engine->interrupt_enable_mask_value,
 		&engine->regs->interrupt_enable_mask_w1c,
 		(unsigned long)(&engine->regs->interrupt_enable_mask_w1c) -
 			(unsigned long)(&engine->regs));
 	wmb();
+	spin_unlock(&engine->lock);
 	/* Schedule the bottom half */
 	schedule_work(&engine->work);
 
-	/*
-	 * RTO - need to protect access here if multiple MSI-X are used for
-	 * user interrupts
-	 */
-	zdev->irq_count++;
 	return IRQ_HANDLED;
 }
 
@@ -2175,9 +2186,6 @@ static int transfer_queue(struct zdma_engine *engine,
 	/* lock the engine state */
 	spin_lock_irqsave(&engine->lock, flags);
 
-	engine->prev_cpu = get_cpu();
-	put_cpu();
-
 	/* engine is being shutdown; do not accept new transfers */
 	if (engine->shutdown & ENGINE_SHUTDOWN_REQUEST) {
 		pr_info("engine %s offline, transfer 0x%p not queued.\n",
@@ -2786,6 +2794,7 @@ ssize_t zdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 			/* transfer can still be in-flight */
 			pr_info("xfer 0x%p,%u, s 0x%x timed out, ep 0x%llx.\n",
 				xfer, xfer->len, xfer->state, req->ep_addr);
+			interrupt_block_dump(engine->zdev);
 			rv = engine_status_read(engine, 0, 1);
 			if (rv < 0) {
 				pr_err("Failed to read engine status\n");
