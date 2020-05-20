@@ -7,11 +7,12 @@ zdma-dkms ($(./print-version.sh)) bionic; urgency=medium
 
   * Deployment.
 
- -- Christopher Hanks  <chris@zendar.io>  $(date -u)
+ -- Bryce Hathaway <bhathaway@zendar.io>  $(date -u)
 EOF
 
 cat debian/changelog
 
+rm -rf build
 mkdir build
 cp -r src build/
 cp -r debian build/
