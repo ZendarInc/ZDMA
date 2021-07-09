@@ -154,10 +154,8 @@ long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		result =  !access_ok(VERIFY_READ, (void __user *)arg,
 				_IOC_SIZE(cmd));
 #else
-	if (_IOC_DIR(cmd) & _IOC_READ)
+	if (_IOC_DIR(cmd) & (_IOC_READ | _IOC_WRITE))
 		result = !access_ok((void __user *)arg, _IOC_SIZE(cmd));
-	else if (_IOC_DIR(cmd) & _IOC_WRITE)
-		result =  !access_ok((void __user *)arg, _IOC_SIZE(cmd));
 #endif
 
 	if (result) {
