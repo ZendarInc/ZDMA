@@ -653,7 +653,9 @@ static struct zdma_transfer *engine_start(struct zdma_engine *engine)
 		(unsigned long)(&engine->sgdma_regs->first_desc_adjacent) -
 			(unsigned long)(&engine->sgdma_regs));
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5, 1, 0)
 	mmiowb();
+#endif
 
 	rv = engine_start_mode_config(engine);
 	if (rv < 0) {
